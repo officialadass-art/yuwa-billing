@@ -1,24 +1,68 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import {
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import "react-native-reanimated";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { BrandColors } from "@/constants/theme";
+import { AuthProvider } from "@/context/AuthContext";
+import { BillingProvider } from "@/context/BillingContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+// Custom light theme with our brand colors
+const CafeTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: BrandColors.primary,
+    background: BrandColors.gray[50],
+    card: BrandColors.white,
+    text: BrandColors.gray[900],
+    border: BrandColors.gray[200],
+    notification: BrandColors.accent,
+  },
+};
+
+const CafeDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: BrandColors.accent,
+    background: "#121212",
+    card: "#1E1E1E",
+    text: BrandColors.gray[50],
+    border: BrandColors.gray[800],
+    notification: BrandColors.accent,
+  },
+};
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: "auth",
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <BillingProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? CafeDarkTheme : CafeTheme}
+        >
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="modal"
+              options={{ presentation: "modal", title: "Modal" }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </BillingProvider>
+    </AuthProvider>
   );
 }

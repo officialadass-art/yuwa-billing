@@ -1,0 +1,652 @@
+import {
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
+} from "@/constants/theme";
+import { useBilling } from "@/context/BillingContext";
+import { MenuItem } from "@/types";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+    Alert,
+    FlatList,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+
+const categories = ["All", "Coffee", "Snacks", "Food"];
+
+export default function BillingScreen() {
+  const {
+    menuItems,
+    billItems,
+    addToBill,
+    updateQuantity,
+    clearBill,
+    calculateTotal,
+  } = useBilling();
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showBillModal, setShowBillModal] = useState(false);
+
+  const filteredItems =
+    selectedCategory === "All"
+      ? menuItems
+      : menuItems.filter((item) => item.category === selectedCategory);
+
+  const { subtotal, tax, total } = calculateTotal();
+
+  const handleAddItem = (item: MenuItem) => {
+    addToBill(item);
+  };
+
+  const handleSaveBill = () => {
+    if (billItems.length === 0) {
+      Alert.alert("Empty Bill", "Please add items to create a bill");
+      return;
+    }
+    Alert.alert(
+      "Bill Saved",
+      `Bill of ₹${total.toFixed(2)} has been saved successfully!`,
+      [{ text: "OK", onPress: () => clearBill() }],
+    );
+  };
+
+  const handlePrintBill = () => {
+    if (billItems.length === 0) {
+      Alert.alert("Empty Bill", "Please add items to print a bill");
+      return;
+    }
+    Alert.alert("Print Bill", "Bill sent to printer successfully!");
+  };
+
+  const renderMenuItem = ({ item }: { item: MenuItem }) => {
+    const inBill = billItems.find((bi) => bi.menuItem.id === item.id);
+
+    return (
+      <TouchableOpacity
+        style={[styles.menuItem, inBill && styles.menuItemSelected]}
+        onPress={() => handleAddItem(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.menuItemImage}>
+          <Ionicons name="cafe" size={24} color={BrandColors.primary} />
+        </View>
+        <View style={styles.menuItemInfo}>
+          <Text style={styles.menuItemName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.menuItemPrice}>₹{item.price}</Text>
+        </View>
+        {inBill && (
+          <View style={styles.quantityBadge}>
+            <Text style={styles.quantityText}>{inBill.quantity}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Create Bill</Text>
+        <TouchableOpacity
+          style={styles.viewBillButton}
+          onPress={() => setShowBillModal(true)}
+        >
+          <Ionicons
+            name="receipt-outline"
+            size={22}
+            color={BrandColors.white}
+          />
+          {billItems.length > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{billItems.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Categories */}
+      <View style={styles.categoriesContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.categoryButton,
+                selectedCategory === category && styles.categoryButtonActive,
+              ]}
+              onPress={() => setSelectedCategory(category)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category && styles.categoryTextActive,
+                ]}
+              >
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Menu Items Grid */}
+      <FlatList
+        data={filteredItems}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMenuItem}
+        numColumns={2}
+        contentContainerStyle={styles.menuGrid}
+        columnWrapperStyle={styles.menuRow}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Bottom Bill Summary */}
+      {billItems.length > 0 && (
+        <View style={styles.billSummary}>
+          <View style={styles.billInfo}>
+            <Text style={styles.billItemCount}>{billItems.length} items</Text>
+            <Text style={styles.billTotal}>₹{total.toFixed(2)}</Text>
+          </View>
+          <View style={styles.billActions}>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveBill}
+            >
+              <Ionicons
+                name="save-outline"
+                size={20}
+                color={BrandColors.white}
+              />
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.printButton}
+              onPress={handlePrintBill}
+            >
+              <Ionicons
+                name="print-outline"
+                size={20}
+                color={BrandColors.white}
+              />
+              <Text style={styles.buttonText}>Print</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Bill Detail Modal */}
+      <Modal
+        visible={showBillModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBillModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Current Bill</Text>
+              <TouchableOpacity onPress={() => setShowBillModal(false)}>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={BrandColors.gray[600]}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {billItems.length === 0 ? (
+              <View style={styles.emptyBill}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={64}
+                  color={BrandColors.gray[300]}
+                />
+                <Text style={styles.emptyBillText}>No items added yet</Text>
+              </View>
+            ) : (
+              <>
+                <ScrollView style={styles.billItemsList}>
+                  {billItems.map((item) => (
+                    <View key={item.id} style={styles.billItem}>
+                      <View style={styles.billItemInfo}>
+                        <Text style={styles.billItemName}>
+                          {item.menuItem.name}
+                        </Text>
+                        <Text style={styles.billItemPrice}>
+                          ₹{item.menuItem.price} × {item.quantity}
+                        </Text>
+                      </View>
+                      <View style={styles.quantityControls}>
+                        <TouchableOpacity
+                          style={styles.quantityButton}
+                          onPress={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
+                        >
+                          <Ionicons
+                            name="remove"
+                            size={18}
+                            color={BrandColors.primary}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.quantityValue}>
+                          {item.quantity}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.quantityButton}
+                          onPress={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
+                        >
+                          <Ionicons
+                            name="add"
+                            size={18}
+                            color={BrandColors.primary}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.billItemSubtotal}>
+                        ₹{item.subtotal}
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                <View style={styles.billTotals}>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Subtotal</Text>
+                    <Text style={styles.totalValue}>
+                      ₹{subtotal.toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Tax (5%)</Text>
+                    <Text style={styles.totalValue}>₹{tax.toFixed(2)}</Text>
+                  </View>
+                  <View style={[styles.totalRow, styles.grandTotalRow]}>
+                    <Text style={styles.grandTotalLabel}>Total</Text>
+                    <Text style={styles.grandTotalValue}>
+                      ₹{total.toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={() => {
+                      clearBill();
+                      setShowBillModal(false);
+                    }}
+                  >
+                    <Text style={styles.clearButtonText}>Clear All</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => {
+                      handleSaveBill();
+                      setShowBillModal(false);
+                    }}
+                  >
+                    <Text style={styles.confirmButtonText}>Save Bill</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BrandColors.gray[50],
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    backgroundColor: BrandColors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  headerTitle: {
+    fontSize: FontSizes.xxl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  viewBillButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: BrandColors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartBadgeText: {
+    fontSize: FontSizes.xs,
+    fontWeight: "700",
+    color: BrandColors.white,
+  },
+  categoriesContainer: {
+    backgroundColor: BrandColors.white,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  categoryButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    marginRight: Spacing.sm,
+    backgroundColor: BrandColors.gray[100],
+  },
+  categoryButtonActive: {
+    backgroundColor: BrandColors.primary,
+  },
+  categoryText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[600],
+  },
+  categoryTextActive: {
+    color: BrandColors.white,
+  },
+  menuGrid: {
+    padding: Spacing.md,
+    paddingBottom: 100,
+  },
+  menuRow: {
+    justifyContent: "space-between",
+  },
+  menuItem: {
+    width: "48%",
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  menuItemSelected: {
+    borderWidth: 2,
+    borderColor: BrandColors.primary,
+  },
+  menuItemImage: {
+    width: "100%",
+    height: 80,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.sm,
+  },
+  menuItemInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  menuItemName: {
+    flex: 1,
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[900],
+  },
+  menuItemPrice: {
+    fontSize: FontSizes.md,
+    fontWeight: "700",
+    color: BrandColors.primary,
+  },
+  quantityBadge: {
+    position: "absolute",
+    top: Spacing.sm,
+    right: Spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: BrandColors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantityText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "700",
+    color: BrandColors.white,
+  },
+  billSummary: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: BrandColors.white,
+    padding: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[200],
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  billInfo: {
+    flex: 1,
+  },
+  billItemCount: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[600],
+  },
+  billTotal: {
+    fontSize: FontSizes.xxl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  billActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  printButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: BrandColors.accent,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  buttonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: BrandColors.white,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  modalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  emptyBill: {
+    padding: Spacing.xxl,
+    alignItems: "center",
+  },
+  emptyBillText: {
+    fontSize: FontSizes.lg,
+    color: BrandColors.gray[500],
+    marginTop: Spacing.md,
+  },
+  billItemsList: {
+    maxHeight: 300,
+    padding: Spacing.lg,
+  },
+  billItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
+  },
+  billItemInfo: {
+    flex: 1,
+  },
+  billItemName: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[900],
+  },
+  billItemPrice: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    marginTop: 2,
+  },
+  quantityControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginRight: Spacing.md,
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantityValue: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.gray[900],
+    minWidth: 24,
+    textAlign: "center",
+  },
+  billItemSubtotal: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+    minWidth: 70,
+    textAlign: "right",
+  },
+  billTotals: {
+    padding: Spacing.lg,
+    backgroundColor: BrandColors.gray[50],
+  },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+  },
+  totalLabel: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[600],
+  },
+  totalValue: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[800],
+  },
+  grandTotalRow: {
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[300],
+    marginBottom: 0,
+  },
+  grandTotalLabel: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  grandTotalValue: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.primary,
+  },
+  modalActions: {
+    flexDirection: "row",
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  clearButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: BrandColors.danger,
+    alignItems: "center",
+  },
+  clearButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.danger,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.white,
+  },
+});

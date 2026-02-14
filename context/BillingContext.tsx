@@ -1,0 +1,202 @@
+import { Bill, BillItem, MenuItem } from "@/types";
+import React, { createContext, ReactNode, useContext, useState } from "react";
+
+interface BillingContextType {
+  menuItems: MenuItem[];
+  billItems: BillItem[];
+  currentBill: Bill | null;
+  addToBill: (item: MenuItem) => void;
+  removeFromBill: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
+  clearBill: () => void;
+  calculateTotal: () => { subtotal: number; tax: number; total: number };
+  addMenuItem: (item: Omit<MenuItem, "id">) => void;
+  updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
+  deleteMenuItem: (id: string) => void;
+}
+
+const BillingContext = createContext<BillingContextType | undefined>(undefined);
+
+// Sample menu items for a cafe
+const initialMenuItems: MenuItem[] = [
+  {
+    id: "1",
+    name: "Espresso",
+    price: 120,
+    category: "Coffee",
+    description: "Strong and bold espresso shot",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?w=200",
+  },
+  {
+    id: "2",
+    name: "Cappuccino",
+    price: 180,
+    category: "Coffee",
+    description: "Creamy cappuccino with foam art",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200",
+  },
+  {
+    id: "3",
+    name: "Latte",
+    price: 200,
+    category: "Coffee",
+    description: "Smooth and milky latte",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1561882468-9110e03e0f78?w=200",
+  },
+  {
+    id: "4",
+    name: "Cold Brew",
+    price: 220,
+    category: "Coffee",
+    description: "Refreshing cold brew coffee",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1517959105821-eaf2591984ca?w=200",
+  },
+  {
+    id: "5",
+    name: "Chocolate Muffin",
+    price: 150,
+    category: "Snacks",
+    description: "Rich chocolate muffin",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=200",
+  },
+  {
+    id: "6",
+    name: "Croissant",
+    price: 120,
+    category: "Snacks",
+    description: "Buttery flaky croissant",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200",
+  },
+  {
+    id: "7",
+    name: "Club Sandwich",
+    price: 280,
+    category: "Food",
+    description: "Triple-decker club sandwich",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200",
+  },
+  {
+    id: "8",
+    name: "Caesar Salad",
+    price: 250,
+    category: "Food",
+    description: "Fresh Caesar salad with croutons",
+    isAvailable: true,
+    image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=200",
+  },
+];
+
+export function BillingProvider({ children }: { children: ReactNode }) {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
+  const [billItems, setBillItems] = useState<BillItem[]>([]);
+  const [currentBill, setCurrentBill] = useState<Bill | null>(null);
+
+  const addToBill = (item: MenuItem) => {
+    setBillItems((prev) => {
+      const existingItem = prev.find((bi) => bi.menuItem.id === item.id);
+      if (existingItem) {
+        return prev.map((bi) =>
+          bi.menuItem.id === item.id
+            ? {
+                ...bi,
+                quantity: bi.quantity + 1,
+                subtotal: (bi.quantity + 1) * bi.menuItem.price,
+              }
+            : bi,
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          menuItem: item,
+          quantity: 1,
+          subtotal: item.price,
+        },
+      ];
+    });
+  };
+
+  const removeFromBill = (itemId: string) => {
+    setBillItems((prev) => prev.filter((bi) => bi.id !== itemId));
+  };
+
+  const updateQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromBill(itemId);
+      return;
+    }
+    setBillItems((prev) =>
+      prev.map((bi) =>
+        bi.id === itemId
+          ? { ...bi, quantity, subtotal: quantity * bi.menuItem.price }
+          : bi,
+      ),
+    );
+  };
+
+  const clearBill = () => {
+    setBillItems([]);
+    setCurrentBill(null);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = billItems.reduce((sum, bi) => sum + bi.subtotal, 0);
+    const tax = subtotal * 0.05; // 5% tax
+    const total = subtotal + tax;
+    return { subtotal, tax, total };
+  };
+
+  const addMenuItem = (item: Omit<MenuItem, "id">) => {
+    const newItem: MenuItem = {
+      ...item,
+      id: Date.now().toString(),
+    };
+    setMenuItems((prev) => [...prev, newItem]);
+  };
+
+  const updateMenuItem = (id: string, item: Partial<MenuItem>) => {
+    setMenuItems((prev) =>
+      prev.map((mi) => (mi.id === id ? { ...mi, ...item } : mi)),
+    );
+  };
+
+  const deleteMenuItem = (id: string) => {
+    setMenuItems((prev) => prev.filter((mi) => mi.id !== id));
+  };
+
+  return (
+    <BillingContext.Provider
+      value={{
+        menuItems,
+        billItems,
+        currentBill,
+        addToBill,
+        removeFromBill,
+        updateQuantity,
+        clearBill,
+        calculateTotal,
+        addMenuItem,
+        updateMenuItem,
+        deleteMenuItem,
+      }}
+    >
+      {children}
+    </BillingContext.Provider>
+  );
+}
+
+export function useBilling() {
+  const context = useContext(BillingContext);
+  if (context === undefined) {
+    throw new Error("useBilling must be used within a BillingProvider");
+  }
+  return context;
+}
