@@ -12,9 +12,26 @@ export interface Business {
   id: string;
   name: string;
   logo?: string;
-  address: string;
-  phone: string;
-  gstNumber?: string;
+  address?: {
+        line1: string;
+        line2?: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+        coordinates?: {
+            latitude: number;
+            longitude: number;
+        };
+  };
+  contact?: {
+      phone: string;
+      email?: string;
+  };
+  leagalInfo?: {
+      gstNumber?: string;
+      panNumber?: string;
+  };
 }
 
 export interface MenuItem {
@@ -51,4 +68,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   currentBusiness: Business | null;
+  token: string | null;
+  refreshToken: string | null;
 }

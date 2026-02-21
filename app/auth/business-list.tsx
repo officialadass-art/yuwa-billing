@@ -1,3 +1,5 @@
+import { APIEndpoints } from "@/constants/apiEndpoint";
+import { fetch } from 'expo/fetch';
 import {
     BorderRadius,
     BrandColors,
@@ -8,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Business } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     FlatList,
     SafeAreaView,
@@ -20,34 +22,60 @@ import {
 } from "react-native";
 
 // Sample businesses
-const businesses: Business[] = [
-  {
-    id: "1",
-    name: "Sunrise Cafe",
-    logo: "",
-    address: "123 Main Street, Downtown",
-    phone: "+91 9876543210",
-    gstNumber: "GST123456789",
-  },
-  {
-    id: "2",
-    name: "Brew House",
-    logo: "",
-    address: "456 Park Avenue, Uptown",
-    phone: "+91 9876543211",
-    gstNumber: "GST987654321",
-  },
-  {
-    id: "3",
-    name: "The Coffee Corner",
-    logo: "",
-    address: "789 Lake View Road",
-    phone: "+91 9876543212",
-  },
-];
+// const businesses: Business[] = [
+//   {
+//     id: "1",
+//     name: "Sunrise Cafe",
+//     logo: "",
+//     address: "123 Main Street, Downtown",
+//     phone: "+91 9876543210",
+//     gstNumber: "GST123456789",
+//   },
+//   {
+//     id: "2",
+//     name: "Brew House",
+//     logo: "",
+//     address: "456 Park Avenue, Uptown",
+//     phone: "+91 9876543211",
+//     gstNumber: "GST987654321",
+//   },
+//   {
+//     id: "3",
+//     name: "The Coffee Corner",
+//     logo: "",
+//     address: "789 Lake View Road",
+//     phone: "+91 9876543212",
+//   },
+// ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness } = useAuth();
+  const { user, selectBusiness, getToken } = useAuth();
+  const [businessList, setBusinessList] = useState<Business[]>([]);
+
+  useEffect(() => {
+    // Fetch businesses from API based on user ID
+    const fetchBusinesses = async () => {
+      try {
+        // authentication Header
+        // Replace with your API endpoint
+        const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.business.list}`, {
+          method: 'GET',
+          headers: {
+            "content-type": "application/json",
+            "Authorization": `Bearer ${getToken()}`,
+          }
+        });
+        const data = await response.json();
+        setBusinessList(data.data);
+      } catch (error) {
+        console.error("Failed to fetch businesses:", error);
+      }
+    };
+
+    if (user) {
+      fetchBusinesses();
+    }
+  }, [user]);
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
@@ -65,14 +93,14 @@ export default function BusinessListScreen() {
       </View>
       <View style={styles.businessInfo}>
         <Text style={styles.businessName}>{item.name}</Text>
-        <Text style={styles.businessAddress}>{item.address}</Text>
+        <Text style={styles.businessAddress}>{item.address?.line1}, {item.address?.line2}, {item.address?.city}, {item.address?.state} - {item.address?.postalCode}, {item.address?.country} </Text>
         <View style={styles.businessMeta}>
           <Ionicons
             name="call-outline"
             size={14}
             color={BrandColors.gray[500]}
           />
-          <Text style={styles.businessPhone}>{item.phone}</Text>
+          <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
         </View>
       </View>
       <Ionicons
@@ -106,7 +134,7 @@ export default function BusinessListScreen() {
 
       {/* Business List */}
       <FlatList
-        data={businesses}
+        data={businessList}
         keyExtractor={(item) => item.id}
         renderItem={renderBusinessItem}
         contentContainerStyle={styles.listContent}

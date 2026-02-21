@@ -1,30 +1,32 @@
+import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { fetch } from 'expo/fetch';
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendOTP = () => {
+  const handleSendOTP = async () => {
     if (mobileNumber.length !== 10) {
       Alert.alert(
         "Invalid Number",
@@ -32,17 +34,34 @@ export default function LoginScreen() {
       );
       return;
     }
-
+    // Making POST request to send OTP
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push({
-        pathname: "/auth/otp",
-        params: { mobile: mobileNumber },
+    try {
+      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.auth.sendOtp}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone: `+91${mobileNumber}` }),
       });
-    }, 1000);
-  };
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send OTP");
+      }
+    
+    router.push({
+      pathname: "/auth/otp",
+      params: { mobile: `${mobileNumber}` }
+    });
+
+  } catch (error) {
+    Alert.alert("Error", error.message || "Failed to send OTP");
+    setIsLoading(false);
+  } finally {
+    setIsLoading(false);
+  }
+}
 
   return (
     <SafeAreaView style={styles.container}>

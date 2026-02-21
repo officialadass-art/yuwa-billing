@@ -1,24 +1,26 @@
+import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { fetch } from 'expo/fetch';
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function OTPScreen() {
@@ -65,25 +67,39 @@ export default function OTPScreen() {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) {
       Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP");
       return;
     }
-
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Login the user
-      login({
-        id: "1",
-        name: "Cafe Owner",
-        mobile: mobile || "",
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.auth.verifyOtp}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone: `+91${mobile}`, code: otpCode }),
       });
-      router.replace("/auth/business-list");
-    }, 1000);
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to verify OTP");
+        throw new Error(data.message || "Failed to verify OTP");
+      } else {
+        login({
+          id: data.data.user.uid,
+          name: data.data.user.firstName,
+          mobile: mobile || "",
+        }, data.data.token, data.data.refreshToken);
+         router.replace("/auth/business-list");
+      }
+      setIsLoading(false);
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to verify OTP");
+      return;
+    }
   };
 
   const handleResendOTP = () => {

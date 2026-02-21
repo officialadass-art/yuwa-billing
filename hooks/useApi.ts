@@ -1,4 +1,4 @@
-import { fetch } from 'expo/fetch';
+import { fetch, FetchRequestInit } from 'expo/fetch';
 import { useCallback, useRef, useState } from "react";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -39,7 +39,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
       }
     }
 
-    const init: RequestInit = { method, headers, signal };
+    const init: FetchRequestInit = { method, headers, signal };
 
     if (body != null) {
       if (body instanceof FormData) {
