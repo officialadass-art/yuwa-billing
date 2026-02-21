@@ -1,5 +1,5 @@
 export const APIEndpoints = {
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://cafe-billing-api.vercel.app/api",
   auth: {
     sendOtp: "/auth/initiate",
     verifyOtp: "/auth/verify",
