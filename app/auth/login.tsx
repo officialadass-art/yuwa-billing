@@ -1,25 +1,26 @@
 import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { fetch } from 'expo/fetch';
+import { fetch } from "expo/fetch";
 import React, { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function LoginScreen() {
@@ -37,31 +38,33 @@ export default function LoginScreen() {
     // Making POST request to send OTP
     setIsLoading(true);
     try {
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.auth.sendOtp}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${APIEndpoints.baseURL}${APIEndpoints.auth.sendOtp}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phone: `+91${mobileNumber}` }),
         },
-        body: JSON.stringify({ phone: `+91${mobileNumber}` }),
-      });
+      );
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to send OTP");
       }
-    
-    router.push({
-      pathname: "/auth/otp",
-      params: { mobile: `${mobileNumber}` }
-    });
 
-  } catch (error) {
-    Alert.alert("Error", error.message || "Failed to send OTP");
-    setIsLoading(false);
-  } finally {
-    setIsLoading(false);
-  }
-}
+      router.push({
+        pathname: "/auth/otp",
+        params: { mobile: `${mobileNumber}` },
+      });
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to send OTP");
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -82,13 +85,13 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Ionicons
-              name="phone-portrait-outline"
-              size={40}
-              color={BrandColors.primary}
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 60, height: 60 }}
+              resizeMode="contain"
             />
           </View>
-          <Text style={styles.title}>Login to CafeBill</Text>
+          <Text style={styles.title}>Login to Leka Cafe</Text>
           <Text style={styles.subtitle}>
             Enter your mobile number to receive a verification code
           </Text>

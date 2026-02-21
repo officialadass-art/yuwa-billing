@@ -1,19 +1,20 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function WelcomeScreen() {
@@ -24,9 +25,13 @@ export default function WelcomeScreen() {
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Ionicons name="cafe" size={80} color={BrandColors.primary} />
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
-        <Text style={styles.appName}>CafeBill</Text>
+        <Text style={styles.appName}>Leka Cafe</Text>
         <Text style={styles.tagline}>Smart Billing for Smart Cafes</Text>
       </View>
 
@@ -109,10 +114,14 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: BrandColors.gray[100],
+    backgroundColor: BrandColors.white,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.lg,
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   appName: {
     fontSize: 36,

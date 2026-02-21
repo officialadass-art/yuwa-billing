@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import {
     Alert,
     FlatList,
+    Image,
     Modal,
     SafeAreaView,
     ScrollView,
@@ -76,7 +77,11 @@ export default function BillingScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.menuItemImage}>
-          <Ionicons name="cafe" size={24} color={BrandColors.primary} />
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 28, height: 28 }}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.menuItemInfo}>
           <Text style={styles.menuItemName} numberOfLines={1}>

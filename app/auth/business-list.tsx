@@ -13,6 +13,7 @@ import { fetch } from "expo/fetch";
 import React, { useEffect, useState } from "react";
 import {
     FlatList,
+    Image,
     Keyboard,
     KeyboardAvoidingView,
     Modal,
@@ -104,7 +105,11 @@ export default function BusinessListScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.businessIcon}>
-        <Ionicons name="cafe" size={32} color={BrandColors.primary} />
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={{ width: 40, height: 40 }}
+          resizeMode="contain"
+        />
       </View>
       <View style={styles.businessInfo}>
         <Text style={styles.businessName}>{item.name}</Text>
