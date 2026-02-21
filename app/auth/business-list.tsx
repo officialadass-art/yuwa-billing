@@ -27,6 +27,7 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
+    Alert
 } from "react-native";
 
 // Country options with flags
@@ -93,8 +94,42 @@ export default function BusinessListScreen() {
     setModalVisible(true);
   };
 
-  const handleSaveDetails = () => {
+  const handleSaveDetails = async () => {
     // TODO: POST to API
+    try {
+
+    } catch (error) {
+      console.error("Failed to create business:", error);
+      Alert.alert("Error", error.message || "Failed to send OTP");
+    }
+    const response = await fetch(
+      `${APIEndpoints.baseURL}${APIEndpoints.business.create}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          name: cafeName,
+          address: {
+            line1: addressLane1,
+            line2: addressLane2,
+            city,
+            state,
+            postalCode: zipCode,
+            country,
+          },
+        }),
+      },
+    );
+    const data = await response.json();
+    if (response.ok) {
+      setBusinessList((prev) => [...prev, data.data]);
+    } else {
+      console.error("Failed to create business:", data);
+    }
+
     setModalVisible(false);
   };
 
