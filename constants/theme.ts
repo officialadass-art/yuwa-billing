@@ -109,3 +109,12 @@ export const FontSizes = {
   xxl: 24,
   xxxl: 32,
 };
+
+export const APIEndpoints = {
+  baseURL: "https://localhost:3000/api",
+  auth: {
+    sendOtp: "/auth/initiate",
+    verifyOtp: "/auth/verify",
+    refreshToken: "/auth/refresh",
+  },
+}
