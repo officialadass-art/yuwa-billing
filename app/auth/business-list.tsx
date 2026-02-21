@@ -1,5 +1,4 @@
 import { APIEndpoints } from "@/constants/apiEndpoint";
-import { fetch } from 'expo/fetch';
 import {
     BorderRadius,
     BrandColors,
@@ -10,61 +9,60 @@ import { useAuth } from "@/context/AuthContext";
 import { Business } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { fetch } from "expo/fetch";
 import React, { useEffect, useState } from "react";
 import {
     FlatList,
+    Keyboard,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 
-// Sample businesses
-// const businesses: Business[] = [
-//   {
-//     id: "1",
-//     name: "Sunrise Cafe",
-//     logo: "",
-//     address: "123 Main Street, Downtown",
-//     phone: "+91 9876543210",
-//     gstNumber: "GST123456789",
-//   },
-//   {
-//     id: "2",
-//     name: "Brew House",
-//     logo: "",
-//     address: "456 Park Avenue, Uptown",
-//     phone: "+91 9876543211",
-//     gstNumber: "GST987654321",
-//   },
-//   {
-//     id: "3",
-//     name: "The Coffee Corner",
-//     logo: "",
-//     address: "789 Lake View Road",
-//     phone: "+91 9876543212",
-//   },
-// ];
+// Country options with flags
+const COUNTRIES = [
+  { label: "🇮🇳  India", value: "India" },
+  { label: "🇦🇪  UAE", value: "UAE" },
+  { label: "🇺🇸  United States", value: "US" },
+];
 
 export default function BusinessListScreen() {
   const { user, selectBusiness, getToken } = useAuth();
   const [businessList, setBusinessList] = useState<Business[]>([]);
 
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [cafeName, setCafeName] = useState("");
+  const [addressLane1, setAddressLane1] = useState("");
+  const [addressLane2, setAddressLane2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+
   useEffect(() => {
-    // Fetch businesses from API based on user ID
     const fetchBusinesses = async () => {
       try {
-        // authentication Header
-        // Replace with your API endpoint
-        const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.business.list}`, {
-          method: 'GET',
-          headers: {
-            "content-type": "application/json",
-            "Authorization": `Bearer ${getToken()}`,
-          }
-        });
+        const response = await fetch(
+          `${APIEndpoints.baseURL}${APIEndpoints.business.list}`,
+          {
+            method: "GET",
+            headers: {
+              "content-type": "application/json",
+              Authorization: `Bearer ${getToken()}`,
+            },
+          },
+        );
         const data = await response.json();
         setBusinessList(data.data);
       } catch (error) {
@@ -82,6 +80,23 @@ export default function BusinessListScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleOpenModal = () => {
+    setCafeName("");
+    setAddressLane1("");
+    setAddressLane2("");
+    setCity("");
+    setState("");
+    setZipCode("");
+    setCountry("");
+    setCountryDropdownOpen(false);
+    setModalVisible(true);
+  };
+
+  const handleSaveDetails = () => {
+    // TODO: POST to API
+    setModalVisible(false);
+  };
+
   const renderBusinessItem = ({ item }: { item: Business }) => (
     <TouchableOpacity
       style={styles.businessCard}
@@ -93,7 +108,11 @@ export default function BusinessListScreen() {
       </View>
       <View style={styles.businessInfo}>
         <Text style={styles.businessName}>{item.name}</Text>
-        <Text style={styles.businessAddress}>{item.address?.line1}, {item.address?.line2}, {item.address?.city}, {item.address?.state} - {item.address?.postalCode}, {item.address?.country} </Text>
+        <Text style={styles.businessAddress}>
+          {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
+          {item.address?.state} - {item.address?.postalCode},{" "}
+          {item.address?.country}{" "}
+        </Text>
         <View style={styles.businessMeta}>
           <Ionicons
             name="call-outline"
@@ -111,48 +130,287 @@ export default function BusinessListScreen() {
     </TouchableOpacity>
   );
 
+  const selectedCountryLabel = COUNTRIES.find(
+    (c) => c.value === country,
+  )?.label;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={BrandColors.white}
+        />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.name || "User"} 👋</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.userName}>{user?.name || "User"} 👋</Text>
+          </View>
+          <View style={styles.avatarContainer}>
+            <Ionicons name="person" size={24} color={BrandColors.primary} />
+          </View>
         </View>
-        <View style={styles.avatarContainer}>
-          <Ionicons name="person" size={24} color={BrandColors.primary} />
+
+        {/* Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Select Business</Text>
+          <Text style={styles.subtitle}>Choose a cafe to manage</Text>
         </View>
-      </View>
 
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Select Business</Text>
-        <Text style={styles.subtitle}>Choose a cafe to manage</Text>
-      </View>
+        {/* Business List */}
+        <FlatList
+          data={businessList}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBusinessItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        />
 
-      {/* Business List */}
-      <FlatList
-        data={businessList}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBusinessItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Add Business Button */}
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity
+            style={styles.addButton}
+            activeOpacity={0.8}
+            onPress={handleOpenModal}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={24}
+              color={BrandColors.accent}
+            />
+            <Text style={styles.addButtonText}>Add New Business</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Add Business Button */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
-          <Ionicons
-            name="add-circle-outline"
-            size={24}
-            color={BrandColors.accent}
-          />
-          <Text style={styles.addButtonText}>Add New Business</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        {/* ─── Add New Business Modal ─── */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={false}
+          presentationStyle="fullScreen"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
+            <SafeAreaView style={styles.modalOverlay}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.modalKeyboard}
+              >
+                <View style={styles.modalContainer}>
+                  {/* Modal Header */}
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Add New Business</Text>
+                    <TouchableOpacity
+                      onPress={() => setModalVisible(false)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={24}
+                        color={BrandColors.gray[700]}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={styles.modalScroll}
+                  >
+                    {/* Cafe Name */}
+                    <Text style={styles.inputLabel}>Cafe Name</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter cafe name"
+                      placeholderTextColor={BrandColors.gray[400]}
+                      value={cafeName}
+                      onChangeText={setCafeName}
+                      returnKeyType="next"
+                    />
+
+                    {/* Address Section */}
+                    <View style={styles.sectionDivider}>
+                      <Ionicons
+                        name="location-outline"
+                        size={18}
+                        color={BrandColors.primary}
+                      />
+                      <Text style={styles.sectionTitle}>Address</Text>
+                    </View>
+
+                    <Text style={styles.inputLabel}>Address Lane 1</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Street address"
+                      placeholderTextColor={BrandColors.gray[400]}
+                      value={addressLane1}
+                      onChangeText={setAddressLane1}
+                      returnKeyType="next"
+                    />
+
+                    <View style={styles.optionalRow}>
+                      <Text style={styles.inputLabel}>Address Lane 2</Text>
+                      <Text style={styles.optionalTag}>Optional</Text>
+                    </View>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Apt, suite, floor, etc."
+                      placeholderTextColor={BrandColors.gray[400]}
+                      value={addressLane2}
+                      onChangeText={setAddressLane2}
+                      returnKeyType="next"
+                    />
+
+                    {/* City & State – side by side */}
+                    <View style={styles.row}>
+                      <View style={styles.halfField}>
+                        <Text style={styles.inputLabel}>City</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          placeholder="City"
+                          placeholderTextColor={BrandColors.gray[400]}
+                          value={city}
+                          onChangeText={setCity}
+                          returnKeyType="next"
+                        />
+                      </View>
+                      <View style={styles.halfField}>
+                        <Text style={styles.inputLabel}>State</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          placeholder="State"
+                          placeholderTextColor={BrandColors.gray[400]}
+                          value={state}
+                          onChangeText={setState}
+                          returnKeyType="next"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Zip & Country – side by side */}
+                    <View style={styles.row}>
+                      <View style={styles.halfField}>
+                        <Text style={styles.inputLabel}>Zip Code</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          placeholder="Zip Code"
+                          placeholderTextColor={BrandColors.gray[400]}
+                          value={zipCode}
+                          onChangeText={setZipCode}
+                          keyboardType="number-pad"
+                          returnKeyType="done"
+                        />
+                      </View>
+                      <View style={styles.halfField}>
+                        <Text style={styles.inputLabel}>Country</Text>
+                        <TouchableOpacity
+                          style={styles.dropdownButton}
+                          onPress={() =>
+                            setCountryDropdownOpen(!countryDropdownOpen)
+                          }
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.dropdownButtonText,
+                              !country && { color: BrandColors.gray[400] },
+                            ]}
+                          >
+                            {selectedCountryLabel || "Select"}
+                          </Text>
+                          <Ionicons
+                            name={
+                              countryDropdownOpen
+                                ? "chevron-up"
+                                : "chevron-down"
+                            }
+                            size={18}
+                            color={BrandColors.gray[500]}
+                          />
+                        </TouchableOpacity>
+
+                        {countryDropdownOpen && (
+                          <View style={styles.dropdownList}>
+                            {COUNTRIES.map((c) => (
+                              <TouchableOpacity
+                                key={c.value}
+                                style={[
+                                  styles.dropdownItem,
+                                  country === c.value &&
+                                    styles.dropdownItemActive,
+                                ]}
+                                onPress={() => {
+                                  setCountry(c.value);
+                                  setCountryDropdownOpen(false);
+                                }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownItemText,
+                                    country === c.value &&
+                                      styles.dropdownItemTextActive,
+                                  ]}
+                                >
+                                  {c.label}
+                                </Text>
+                                {country === c.value && (
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={18}
+                                    color={BrandColors.primary}
+                                  />
+                                )}
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Save Button */}
+                    <TouchableOpacity
+                      style={[
+                        styles.saveButton,
+                        (!cafeName ||
+                          !addressLane1 ||
+                          !city ||
+                          !state ||
+                          !zipCode ||
+                          !country) &&
+                          styles.saveButtonDisabled,
+                      ]}
+                      onPress={handleSaveDetails}
+                      disabled={
+                        !cafeName ||
+                        !addressLane1 ||
+                        !city ||
+                        !state ||
+                        !zipCode ||
+                        !country
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={BrandColors.white}
+                      />
+                      <Text style={styles.saveButtonText}>Save Details</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -271,5 +529,162 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     fontWeight: "600",
     color: BrandColors.accent,
+  },
+
+  /* ─── Modal Styles ─── */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: BrandColors.white,
+  },
+  modalKeyboard: {
+    flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: BrandColors.white,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  modalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  modalScroll: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+
+  /* ─── Form Styles ─── */
+  inputLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
+    color: BrandColors.gray[700],
+    marginBottom: Spacing.xs,
+  },
+  textInput: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[900],
+    backgroundColor: BrandColors.gray[50],
+    marginBottom: Spacing.md,
+  },
+  sectionDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[200],
+  },
+  sectionTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  optionalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.xs,
+  },
+  optionalTag: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[400],
+    fontStyle: "italic",
+  },
+  row: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  halfField: {
+    flex: 1,
+  },
+
+  /* ─── Country Dropdown ─── */
+  dropdownButton: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: BrandColors.gray[50],
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  dropdownButtonText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[900],
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: BrandColors.gray[200],
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.white,
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.md,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 10,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
+  },
+  dropdownItemActive: {
+    backgroundColor: BrandColors.primary + "10",
+  },
+  dropdownItemText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[800],
+  },
+  dropdownItemTextActive: {
+    color: BrandColors.primary,
+    fontWeight: "600",
+  },
+
+  /* ─── Save Button ─── */
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    height: 52,
+    backgroundColor: BrandColors.primary,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.white,
   },
 });
