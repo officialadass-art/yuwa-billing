@@ -38,11 +38,19 @@ export interface MenuItem {
   id: string;
   name: string;
   price: number;
-  image?: string;
-  category: string;
+  imgUrl?: string;
+  category?: string;
   description?: string;
   isAvailable: boolean;
+  categoryId?: string;
 }
+
+export interface Category {
+    id: string;
+    name: string;
+    description?: string;
+}
+
 
 export interface BillItem {
   id: string;

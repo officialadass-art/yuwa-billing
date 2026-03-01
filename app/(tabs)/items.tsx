@@ -1,32 +1,32 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useBilling } from "@/context/BillingContext";
 import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
+// const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
 export default function ItemsScreen() {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } =
+  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, categoryItems } =
     useBilling();
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -36,9 +36,9 @@ export default function ItemsScreen() {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    category: "Coffee",
+    categoryId: "Coffee",
     description: "",
-    image: "",
+    imgUrl: "",
   });
 
   const filteredItems = menuItems.filter((item) =>
@@ -50,9 +50,9 @@ export default function ItemsScreen() {
     setFormData({
       name: "",
       price: "",
-      category: "Coffee",
+      categoryId: "Coffee",
       description: "",
-      image: "",
+      imgUrl: "",
     });
     setShowModal(true);
   };
@@ -62,9 +62,9 @@ export default function ItemsScreen() {
     setFormData({
       name: item.name,
       price: item.price.toString(),
-      category: item.category,
+      categoryId: item.categoryId || "",
       description: item.description || "",
-      image: item.image || "",
+      imgUrl: item.imgUrl || "",
     });
     setShowModal(true);
   };
@@ -83,18 +83,18 @@ export default function ItemsScreen() {
       updateMenuItem(editingItem.id, {
         name: formData.name,
         price: Number(formData.price),
-        category: formData.category,
+        categoryId: formData.categoryId,
         description: formData.description,
-        image: formData.image,
+        imgUrl: formData.imgUrl,
       });
       Alert.alert("Success", "Item updated successfully");
     } else {
       addMenuItem({
         name: formData.name,
         price: Number(formData.price),
-        category: formData.category,
+        categoryId: formData.categoryId,
         description: formData.description,
-        image: formData.image,
+        imgUrl: formData.imgUrl,
         isAvailable: true,
       });
       Alert.alert("Success", "Item added successfully");
@@ -123,8 +123,8 @@ export default function ItemsScreen() {
   const renderItem = ({ item }: { item: MenuItem }) => (
     <View style={styles.itemCard}>
       <View style={styles.itemImageContainer}>
-        {item.image ? (
-          <Image source={{ uri: item.image }} style={styles.itemImage} />
+        {item.imgUrl ? (
+          <Image source={{ uri: item.imgUrl }} style={styles.itemImage} />
         ) : (
           <Ionicons name="cafe" size={32} color={BrandColors.primary} />
         )}
@@ -222,7 +222,7 @@ export default function ItemsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingItem ? "Edit Item" : "Add New Item"}
+                {editingItem ? "Edit Item" : "Add New Item" }
               </Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons
@@ -239,9 +239,9 @@ export default function ItemsScreen() {
             >
               {/* Image Preview */}
               <View style={styles.imagePreview}>
-                {formData.image ? (
+                {formData.imgUrl ? (
                   <Image
-                    source={{ uri: formData.image }}
+                    source={{ uri: formData.imgUrl }}
                     style={styles.previewImage}
                   />
                 ) : (
@@ -263,9 +263,9 @@ export default function ItemsScreen() {
                   style={styles.input}
                   placeholder="https://example.com/image.jpg"
                   placeholderTextColor={BrandColors.gray[400]}
-                  value={formData.image}
+                  value={formData.imgUrl}
                   onChangeText={(text) =>
-                    setFormData({ ...formData, image: text })
+                    setFormData({ ...formData, imgUrl: text })
                   }
                 />
               </View>
@@ -304,26 +304,26 @@ export default function ItemsScreen() {
                 <Text style={styles.inputLabel}>Category *</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.categoryOptions}>
-                    {categories.map((cat) => (
+                    {categoryItems.map((cat) => (
                       <TouchableOpacity
-                        key={cat}
+                        key={cat.id}
                         style={[
                           styles.categoryOption,
-                          formData.category === cat &&
+                          formData.categoryId === cat.id &&
                             styles.categoryOptionActive,
                         ]}
                         onPress={() =>
-                          setFormData({ ...formData, category: cat })
+                          setFormData({ ...formData, categoryId: cat.id })
                         }
                       >
                         <Text
                           style={[
                             styles.categoryOptionText,
-                            formData.category === cat &&
+                            formData.categoryId === cat.id &&
                               styles.categoryOptionTextActive,
                           ]}
                         >
-                          {cat}
+                          {cat.name}
                         </Text>
                       </TouchableOpacity>
                     ))}

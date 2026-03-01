@@ -38,7 +38,7 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken } = useAuth();
+  const { user, selectBusiness, getToken, logout } = useAuth();
   const [businessList, setBusinessList] = useState<Business[]>([]);
 
   // Modal state
@@ -69,6 +69,8 @@ export default function BusinessListScreen() {
         setBusinessList(data.data);
       } catch (error) {
         console.error("Failed to fetch businesses:", error);
+        logout();
+        router.replace("/auth/welcome");
       }
     };
 
@@ -98,10 +100,6 @@ export default function BusinessListScreen() {
     // TODO: POST to API
     try {
 
-    } catch (error) {
-      console.error("Failed to create business:", error);
-      Alert.alert("Error", error.message || "Failed to send OTP");
-    }
     const response = await fetch(
       `${APIEndpoints.baseURL}${APIEndpoints.business.create}`,
       {
@@ -131,6 +129,11 @@ export default function BusinessListScreen() {
     }
 
     setModalVisible(false);
+
+    } catch (error) {
+      console.error("Failed to create business:", error);
+      Alert.alert("Error", error.message || "Failed to send OTP");
+    }
   };
 
   const renderBusinessItem = ({ item }: { item: Business }) => (

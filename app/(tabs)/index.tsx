@@ -67,7 +67,7 @@ export default function DashboardScreen() {
       }
     };
     fetchDashboardData();
-  }, [currentBusiness?.id]);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

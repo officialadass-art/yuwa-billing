@@ -1,28 +1,30 @@
+import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
 import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-const categories = ["All", "Coffee", "Snacks", "Food"];
+// const categories = ["All", "Coffee", "Snacks", "Food"];
 
 export default function BillingScreen() {
   const {
@@ -32,14 +34,16 @@ export default function BillingScreen() {
     updateQuantity,
     clearBill,
     calculateTotal,
+    categoryItems
   } = useBilling();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showBillModal, setShowBillModal] = useState(false);
+  const {getToken, currentBusiness} = useAuth();
 
   const filteredItems =
     selectedCategory === "All"
       ? menuItems
-      : menuItems.filter((item) => item.category === selectedCategory);
+      : menuItems.filter((item) => item.categoryId === selectedCategory);
 
   const { subtotal, tax, total } = calculateTotal();
 
@@ -47,16 +51,57 @@ export default function BillingScreen() {
     addToBill(item);
   };
 
-  const handleSaveBill = () => {
+  const handleSaveBill = async () => {
     if (billItems.length === 0) {
       Alert.alert("Empty Bill", "Please add items to create a bill");
       return;
     }
-    Alert.alert(
-      "Bill Saved",
-      `Bill of ₹${total.toFixed(2)} has been saved successfully!`,
-      [{ text: "OK", onPress: () => clearBill() }],
-    );
+    try {
+
+      let requestPayload = {
+        customerName: "Customer",
+        customerPhone: "0000000000",
+        discount: 0,
+        paymentMethod: "cash",
+        items: billItems.map(bi => {
+          return {
+            productId: bi.menuItem.id,
+            productName: bi.menuItem.name,
+            quantity: bi.quantity,
+            unitPrice: bi.menuItem.price
+          }
+        })
+      }
+
+      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.invoices.create.replace(':tenantId', currentBusiness?.id || '')}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save bill: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        Alert.alert(
+        "Bill Saved",
+        `Bill of ₹${result.data.totalAmount.toFixed(2)} has been saved successfully!`,
+          [{ text: "OK", onPress: () => clearBill() }],
+        );
+      }
+
+     
+    } catch (error) {
+      console.error("Error saving bill:", error);
+      Alert.alert("Error", "Failed to save the bill. Please try again.");
+    }
+    
   };
 
   const handlePrintBill = () => {
@@ -125,22 +170,41 @@ export default function BillingScreen() {
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category}
+
+          <TouchableOpacity
+              key={"All"}
               style={[
                 styles.categoryButton,
-                selectedCategory === category && styles.categoryButtonActive,
+                selectedCategory === "All" && styles.categoryButtonActive,
               ]}
-              onPress={() => setSelectedCategory(category)}
+              onPress={() => setSelectedCategory("All")}
             >
               <Text
                 style={[
                   styles.categoryText,
-                  selectedCategory === category && styles.categoryTextActive,
+                  selectedCategory === "All" && styles.categoryTextActive,
                 ]}
               >
-                {category}
+                All
+              </Text>
+          </TouchableOpacity>
+
+          {categoryItems.map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[
+                styles.categoryButton,
+                selectedCategory === category.id && styles.categoryButtonActive,
+              ]}
+              onPress={() => setSelectedCategory(category.id)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive,
+                ]}
+              >
+                {category.name}
               </Text>
             </TouchableOpacity>
           ))}
