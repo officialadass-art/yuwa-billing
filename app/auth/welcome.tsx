@@ -5,7 +5,7 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import React from "react";
 import {
   Image,
@@ -16,8 +16,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "@/context/AuthContext";
 
 export default function WelcomeScreen() {
+
+  const { isAuthenticated } = useAuth();
+  
+  // If user is authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Redirect href="/auth/business-list" />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />

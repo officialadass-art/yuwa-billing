@@ -1,22 +1,22 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface MenuItemProps {
@@ -85,6 +85,12 @@ export default function ProfileScreen() {
     router.push("/auth/business-list");
   };
 
+  const getCafeAddress = () => {
+    if (!currentBusiness) return "Your Cafe Address";
+    const { address } = currentBusiness;
+    return `${address?.line1 || ''}, ${address?.line2 || ''}, ${address?.city || ''}, ${address?.state || ''} - ${address?.postalCode || ''}`;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
@@ -112,7 +118,7 @@ export default function ProfileScreen() {
               {currentBusiness?.name || "CafeBill"}
             </Text>
             <Text style={styles.businessAddress}>
-              {currentBusiness?.address || "Your Cafe Address"}
+              {getCafeAddress()}
             </Text>
           </View>
           <TouchableOpacity style={styles.editBusinessButton}>
@@ -164,7 +170,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="document-text-outline"
               label="GST Details"
-              subtitle={currentBusiness?.gstNumber || "Not configured"}
+              subtitle={currentBusiness?.leagalInfo?.gstNumber || "Not configured"}
               onPress={() =>
                 Alert.alert("GST", "GST configuration coming soon")
               }

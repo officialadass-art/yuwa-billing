@@ -1,5 +1,5 @@
 import { Bill, BillItem, MenuItem } from "@/types";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 interface BillingContextType {
   menuItems: MenuItem[];

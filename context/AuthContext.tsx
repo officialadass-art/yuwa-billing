@@ -1,5 +1,23 @@
 import { AuthState, Business, User } from "@/types";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import * as SecureStore from 'expo-secure-store';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
+
+async function SecureStoreSave(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+    return;
+  } 
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function SecureStoreGet(key: string) {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  let result = SecureStore.getItemAsync(key);
+  return result;
+}
 
 interface AuthContextType extends AuthState {
   login: (user: User) => void;
@@ -19,6 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     refreshToken: null,
   });
+
+  // Load auth state from secure storage on app start
+  useEffect(() => {
+    const loadAuthState = async () => {
+      const storedState = await SecureStoreGet('auth_state');
+      if (storedState) {
+        setAuthState(JSON.parse(storedState));
+      }
+    };
+    loadAuthState();
+  }, []);
+
+  // Set auth state in secure storage whenever it changes
+  useEffect(() => {
+    const saveAuthState = async () => {
+      await SecureStoreSave('auth_state', JSON.stringify(authState));
+    };
+    saveAuthState();
+  }, [authState.token, authState.refreshToken, authState.isAuthenticated, authState.user, authState.currentBusiness]);
 
   const login = (user: User, token?:string, refreshToken?:string) => {
     setAuthState((prev) => ({

@@ -1,6 +1,6 @@
 export const APIEndpoints = {
-  baseURL: "https://cafe-billing-api.vercel.app/api", // Production
-  // baseURL: "http://localhost:3000/api", // Development
+  // baseURL: "https://cafe-billing-api.vercel.app/api", // Production
+  baseURL: "http://localhost:3000/api", // Development
   auth: {
     sendOtp: "/auth/initiate",
     verifyOtp: "/auth/verify",
@@ -9,5 +9,8 @@ export const APIEndpoints = {
   business: {
     list: "/tenants",
     create: "/tenants/create"
+  },
+  dashboard: {
+    summary: "/tenants/:tenantId/dashboard/summary",
   }
 }

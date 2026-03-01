@@ -1,21 +1,24 @@
+import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { ApiResponse, Invoice } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { fetch } from "expo/fetch";
 
 // Mock data for dashboard
 const todayStats = {
@@ -33,7 +36,38 @@ const recentOrders = [
 ];
 
 export default function DashboardScreen() {
-  const { currentBusiness } = useAuth();
+  const { currentBusiness, getToken } = useAuth();
+  const [dashboardData, setDashboardData] = React.useState({
+    todaysSalesAmount: 0,
+    totalOrdersCount: 0,
+    totalSalesAmount: 0,
+    todaysOrdersCount: 0,
+    averageOrderAmount: 0,
+    topSellerItem: {
+      productId: "prod-123",
+      productName: "Cappuccino",
+      quantitySold: 150,
+      totalSales: 750
+    },
+    todaysOrderData: ([] as Invoice[])
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+    const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.dashboard.summary.replace(":tenantId", currentBusiness?.id || "")}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${getToken()}`,
+        }
+      });
+      const data = (await response.json()) as ApiResponse;
+      if(data.success) {
+        setDashboardData({...data.data});
+      }
+    };
+    fetchDashboardData();
+  }, [currentBusiness?.id]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -74,7 +108,7 @@ export default function DashboardScreen() {
               />
             </View>
             <Text style={styles.statsValue}>
-              ₹{todayStats.totalSales.toLocaleString()}
+              ₹{dashboardData.totalSalesAmount.toLocaleString()}
             </Text>
             <Text style={styles.statsLabel}>Today's Sales</Text>
           </View>
@@ -87,7 +121,7 @@ export default function DashboardScreen() {
                 color={BrandColors.accent}
               />
             </View>
-            <Text style={styles.statsValueDark}>{todayStats.totalOrders}</Text>
+            <Text style={styles.statsValueDark}>{dashboardData.todaysOrdersCount}</Text>
             <Text style={styles.statsLabelDark}>Orders</Text>
           </View>
         </View>
@@ -102,7 +136,7 @@ export default function DashboardScreen() {
               />
             </View>
             <Text style={styles.statsValueDark}>
-              ₹{todayStats.avgOrderValue}
+              ₹{dashboardData.averageOrderAmount.toLocaleString()}
             </Text>
             <Text style={styles.statsLabelDark}>Avg. Order</Text>
           </View>
@@ -115,7 +149,7 @@ export default function DashboardScreen() {
                 color={BrandColors.info}
               />
             </View>
-            <Text style={styles.statsValueDark}>{todayStats.topItem}</Text>
+            <Text style={styles.statsValueDark}>{dashboardData.topSellerItem.productName}</Text>
             <Text style={styles.statsLabelDark}>Top Seller</Text>
           </View>
         </View>
@@ -199,7 +233,7 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {recentOrders.map((order) => (
+          {dashboardData.todaysOrderData.map((order) => (
             <TouchableOpacity key={order.id} style={styles.orderCard}>
               <View style={styles.orderIcon}>
                 <Ionicons
@@ -211,11 +245,11 @@ export default function DashboardScreen() {
               <View style={styles.orderInfo}>
                 <Text style={styles.orderTitle}>Order #{order.id}</Text>
                 <Text style={styles.orderMeta}>
-                  {order.items} items • {order.time}
+                  {order.items.length} items • {order.createdAt}
                 </Text>
               </View>
               <View style={styles.orderAmount}>
-                <Text style={styles.orderTotal}>₹{order.total}</Text>
+                <Text style={styles.orderTotal}>₹{order.totalAmount}</Text>
                 <View style={styles.statusBadge}>
                   <Ionicons
                     name="checkmark-circle"

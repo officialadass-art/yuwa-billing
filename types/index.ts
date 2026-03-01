@@ -71,3 +71,35 @@ export interface AuthState {
   token: string | null;
   refreshToken: string | null;
 }
+
+export interface ApiResponse {
+    success: boolean;
+    message: string;
+    data?: any;
+    error?: string;
+}
+
+
+export interface InvoiceItem {
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+}
+
+export interface Invoice {
+    id?: string;
+    tenantId: string;
+    customerName?: string;
+    customerPhone?: string;
+    items: InvoiceItem[];
+    totalAmount: number;
+    subTotal: number;
+    tax?: number;
+    discount?: number;
+    paymentMethod: 'cash' | 'card' | 'upi';
+    status: 'paid' | 'pending' | 'cancelled';
+    userId?: string; // Billed by
+    createdAt: string;
+}
