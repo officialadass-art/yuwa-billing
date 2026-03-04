@@ -340,9 +340,8 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
   
-              <ScrollView
+              <View
                 style={styles.modalBody}
-                showsVerticalScrollIndicator={false}
               >
 
               {/* Display the list of discovered printers */}
@@ -364,7 +363,7 @@ export default function ProfileScreen() {
                 }
               />
                 
-              </ScrollView>
+              </View>
   
               {/* Modal Actions */}
               <View style={styles.modalActions}>
