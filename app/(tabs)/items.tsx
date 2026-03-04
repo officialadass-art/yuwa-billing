@@ -22,15 +22,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {useCreateProduct, useUpdateProduct, useDeleteProduct} from '@/hooks/use-api-products'
+import { useAuth } from "@/context/AuthContext";
 
 // const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
 export default function ItemsScreen() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, categoryItems } =
     useBilling();
+  const { currentBusiness } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const { mutate: createProduct, isPending: isCreatingProduct } = useCreateProduct();
+  const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct();
+  const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct();
+
 
   // Form state
   const [formData, setFormData] = useState({
@@ -69,55 +76,129 @@ export default function ItemsScreen() {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const validateForm = () => {
     if (!formData.name.trim()) {
-      Alert.alert("Error", "Please enter item name");
-      return;
+      Alert.alert("Validation Error", "Please enter item name");
+      return false;
     }
-    if (!formData.price || isNaN(Number(formData.price))) {
-      Alert.alert("Error", "Please enter a valid price");
-      return;
+    if (!formData.price.trim()) {
+      Alert.alert("Validation Error", "Please enter price");
+      return false;
     }
-
-    if (editingItem) {
-      updateMenuItem(editingItem.id, {
-        name: formData.name,
-        price: Number(formData.price),
-        categoryId: formData.categoryId,
-        description: formData.description,
-        imgUrl: formData.imgUrl,
-      });
-      Alert.alert("Success", "Item updated successfully");
-    } else {
-      addMenuItem({
-        name: formData.name,
-        price: Number(formData.price),
-        categoryId: formData.categoryId,
-        description: formData.description,
-        imgUrl: formData.imgUrl,
-        isAvailable: true,
-      });
-      Alert.alert("Success", "Item added successfully");
+    if (isNaN(parseFloat(formData.price))) {
+      Alert.alert("Validation Error", "Price must be a valid number");
+      return false;
     }
-    setShowModal(false);
+    return true;
   };
 
-  const handleDelete = (item: MenuItem) => {
-    Alert.alert(
-      "Delete Item",
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
+  const handleSaveItem = () => {
+    if (!validateForm()) return;
+
+    const itemPayload: Omit<MenuItem, "id"> = {
+      name: formData.name,
+      price: parseFloat(formData.price),
+      categoryId: formData.categoryId,
+      description: formData.description,
+      imgUrl: formData.imgUrl,
+      isAvailable: true,
+    };
+
+    if (editingItem) {
+      // Update item
+      updateProduct(
         {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteMenuItem(item.id);
-            Alert.alert("Success", "Item deleted successfully");
-          },
+          tenantId: currentBusiness?.id || "",
+          productId: editingItem.id,
+          product: itemPayload,
         },
-      ],
-    );
+        {
+          onSuccess: () => {
+            Alert.alert("Success", "Item updated successfully");
+            setShowModal(false);
+          },
+          onError: (error) => {
+            Alert.alert("Error", error.message || "Failed to update item");
+          },
+        }
+      );
+    } else {
+      // Create new item
+      createProduct(
+        {
+          tenantId: currentBusiness?.id || "",
+          product: itemPayload,
+        },
+        {
+          onSuccess: () => {
+            Alert.alert("Success", "Item added successfully");
+            setShowModal(false);
+          },
+          onError: (error) => {
+            Alert.alert("Error", error.message || "Failed to add item");
+          },
+        }
+      );
+    }
+  };
+
+  // const handleSave = () => {
+  //   if (!formData.name.trim()) {
+  //     Alert.alert("Error", "Please enter item name");
+  //     return;
+  //   }
+  //   if (!formData.price || isNaN(Number(formData.price))) {
+  //     Alert.alert("Error", "Please enter a valid price");
+  //     return;
+  //   }
+
+  //   if (editingItem) {
+  //     updateMenuItem(editingItem.id, {
+  //       name: formData.name,
+  //       price: Number(formData.price),
+  //       categoryId: formData.categoryId,
+  //       description: formData.description,
+  //       imgUrl: formData.imgUrl,
+  //     });
+  //     Alert.alert("Success", "Item updated successfully");
+  //   } else {
+  //     addMenuItem({
+  //       name: formData.name,
+  //       price: Number(formData.price),
+  //       categoryId: formData.categoryId,
+  //       description: formData.description,
+  //       imgUrl: formData.imgUrl,
+  //       isAvailable: true,
+  //     });
+  //     Alert.alert("Success", "Item added successfully");
+  //   }
+  //   setShowModal(false);
+  // };
+
+  const handleDelete = (item: MenuItem) => {
+    Alert.alert("Delete Item", `Are you sure you want to delete "${item.name}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          deleteProduct(
+            {
+              tenantId: currentBusiness?.id || "",
+              productId: item.id,
+            },
+            {
+              onSuccess: () => {
+                Alert.alert("Success", "Item deleted successfully");
+              },
+              onError: (error) => {
+                Alert.alert("Error", error.message || "Failed to delete item");
+              },
+            }
+          );
+        },
+      },
+    ]);
   };
 
   const renderItem = ({ item }: { item: MenuItem }) => (
@@ -356,7 +437,7 @@ export default function ItemsScreen() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveItem}>
                 <Text style={styles.saveButtonText}>
                   {editingItem ? "Update" : "Add Item"}
                 </Text>

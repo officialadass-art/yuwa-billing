@@ -2,6 +2,8 @@ import { ApiResponse, Bill, BillItem, Category, MenuItem } from "@/types";
 import React, { createContext, ReactNode, use, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { APIEndpoints } from "@/constants/apiEndpoint";
+import {useApiProducts} from '@/hooks/use-api-products'
+import {useApiCategories} from '@/hooks/use-api-category'
 
 
 interface BillingContextType {
@@ -99,63 +101,72 @@ const BillingContext = createContext<BillingContextType | undefined>(undefined);
 
 export function BillingProvider({ children }: { children: ReactNode }) {
   const {currentBusiness, getToken} = useAuth();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [billItems, setBillItems] = useState<BillItem[]>([]);
   const [currentBill, setCurrentBill] = useState<Bill | null>(null);
-  const [categoryItems, setCategoryItems] = useState<Category[]>([]);
 
 
-  useEffect(() => {
-    // Fetch menu items from API when current business changes
-    const fetchMenuItems = async () => {
-      if (!currentBusiness) return;
-      try {
-        const response = await fetch(
-          `${APIEndpoints.baseURL}${APIEndpoints.products.list.replace(":tenantId", currentBusiness.id)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${getToken()}`,
-            },
-          }
-        );
-        const data = await response.json() as ApiResponse;
-        if (response.ok) {
-          setMenuItems(data.data);
-        } else {
-          console.error("Failed to fetch menu items:", data.error);
-        }
-      } catch (error) {
-        console.error("Error fetching menu items:", error);
-      }
-    };
-    fetchMenuItems();
-  }, [currentBusiness?.id]);
+  // useEffect(() => {
+  //   // Fetch menu items from API when current business changes
+  //   const fetchMenuItems = async () => {
+  //     if (!currentBusiness) return;
+  //     try {
+  //       const response = await fetch(
+  //         `${APIEndpoints.baseURL}${APIEndpoints.products.list.replace(":tenantId", currentBusiness.id)}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${getToken()}`,
+  //           },
+  //         }
+  //       );
+  //       const data = await response.json() as ApiResponse;
+  //       if (response.ok) {
+  //         setMenuItems(data.data);
+  //       } else {
+  //         console.error("Failed to fetch menu items:", data.error);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching menu items:", error);
+  //     }
+  //   };
+  //   fetchMenuItems();
+  // }, [currentBusiness?.id]);
 
-  useEffect(() => {
-    // Fetch category items from API
-    const fetchCategoryItems = async () => {
-      if (!currentBusiness) return;
-      try {
-        const response = await fetch(
-          `${APIEndpoints.baseURL}/tenants/${currentBusiness.id}/categories`,
-          {
-            headers: {
-              Authorization: `Bearer ${getToken()}`,
-            },
-          }
-        );
-        const data = await response.json() as ApiResponse;
-        if (response.ok) {
-          setCategoryItems(data.data);
-        } else {
-          console.error("Failed to fetch category items:", data.error);
-        }
-      } catch (error) {
-        console.error("Error fetching category items:", error);
-      }
-    };
-    fetchCategoryItems();
-  }, [currentBusiness?.id])
+  // useEffect(() => {
+  //   // Fetch category items from API
+  //   const fetchCategoryItems = async () => {
+  //     if (!currentBusiness) return;
+  //     try {
+  //       const response = await fetch(
+  //         `${APIEndpoints.baseURL}/tenants/${currentBusiness.id}/categories`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${getToken()}`,
+  //           },
+  //         }
+  //       );
+  //       const data = await response.json() as ApiResponse;
+  //       if (response.ok) {
+  //         setCategoryItems(data.data);
+  //       } else {
+  //         console.error("Failed to fetch category items:", data.error);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching category items:", error);
+  //     }
+  //   };
+  //   fetchCategoryItems();
+  // }, [currentBusiness?.id])
+
+  // Use the hooks instead of fetch
+  const { data: menuItems = [] } = useApiProducts({
+    tenantId: currentBusiness?.id,
+    enabled: !!currentBusiness?.id,
+  });
+
+  const { data: categoryItems = [] } = useApiCategories({
+    tenantId: currentBusiness?.id,
+    enabled: !!currentBusiness?.id,
+  });
 
   const addToBill = (item: MenuItem) => {
     setBillItems((prev) => {
@@ -213,76 +224,86 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     return { subtotal, tax, total };
   };
 
-  const addMenuItem = async (item: Omit<MenuItem, "id">) => {
-    // Add menu item to backend
-    try {
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.create.replace(":tenantId", currentBusiness?.id || "")}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify(item),
-      });
-      if (!response.ok) {
-        console.error("Failed to add menu item to backend");
-      }
-      const responseData = await response.json() as ApiResponse;
-      if (responseData.success) {
-        setMenuItems((prev) => [...prev, responseData.data]);
-      } else {
-        console.error("Failed to add menu item:", responseData.error);
-      }
-    } catch (error) {
-      console.error("Error adding menu item to backend:", error);
-    }
+  // const addMenuItem = async (item: Omit<MenuItem, "id">) => {
+  //   // Add menu item to backend
+  //   try {
+  //     const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.create.replace(":tenantId", currentBusiness?.id || "")}`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${getToken()}`,
+  //       },
+  //       body: JSON.stringify(item),
+  //     });
+  //     if (!response.ok) {
+  //       console.error("Failed to add menu item to backend");
+  //     }
+  //     const responseData = await response.json() as ApiResponse;
+  //     if (responseData.success) {
+  //       setMenuItems((prev) => [...prev, responseData.data]);
+  //     } else {
+  //       console.error("Failed to add menu item:", responseData.error);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error adding menu item to backend:", error);
+  //   }
+  // };
+
+  // const updateMenuItem = async (id: string, item: Partial<MenuItem>) => {
+
+  //   try {
+  //     // Update menu item in backend
+  //     const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.update.replace(":tenantId", currentBusiness?.id || "").replace(":productId", id)}`, {
+  //       method: "PUT",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${getToken()}`,
+  //       },
+  //       body: JSON.stringify(item),
+  //     })
+  //     if (response.status !== 200) {
+  //       console.error("Failed to update menu item");
+  //       return;
+  //     }
+  //     // Update menu item in local state
+  //     setMenuItems((prev) =>
+  //       prev.map((mi) => (mi.id === id ? { ...mi, ...item } : mi)),
+  //     );
+  //   } catch (error) {
+  //     console.error("Error updating menu item:", error);
+  //   }
+  // };
+
+  // const deleteMenuItem = async (id: string) => {
+
+  //   try {
+  //     // Delete menu item from backend
+  //     const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.delete.replace(":tenantId", currentBusiness?.id || "").replace(":productId", id)}`, {
+  //       method: "DELETE",
+  //       headers: {
+  //         Authorization: `Bearer ${getToken()}`,
+  //       },
+  //     });
+  //     if (response.status !== 200) {
+  //       console.error("Failed to delete menu item");
+  //     }
+  //     setMenuItems((prev) => prev.filter((mi) => mi.id !== id));
+  //   } catch (error) {
+  //     console.error("Error deleting menu item:", error);
+  //   }
+
+  // };
+  const addMenuItem = (item: Omit<MenuItem, "id">) => {
+    // This is now handled by useCreateProduct hook in the component
   };
 
-  const updateMenuItem = async (id: string, item: Partial<MenuItem>) => {
-
-    try {
-      // Update menu item in backend
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.update.replace(":tenantId", currentBusiness?.id || "").replace(":productId", id)}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify(item),
-      })
-      if (response.status !== 200) {
-        console.error("Failed to update menu item");
-        return;
-      }
-      // Update menu item in local state
-      setMenuItems((prev) =>
-        prev.map((mi) => (mi.id === id ? { ...mi, ...item } : mi)),
-      );
-    } catch (error) {
-      console.error("Error updating menu item:", error);
-    }
+  const updateMenuItem = (id: string, item: Partial<MenuItem>) => {
+    // This is now handled by useUpdateProduct hook in the component
   };
 
-  const deleteMenuItem = async (id: string) => {
-
-    try {
-      // Delete menu item from backend
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.products.delete.replace(":tenantId", currentBusiness?.id || "").replace(":productId", id)}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
-      if (response.status !== 200) {
-        console.error("Failed to delete menu item");
-      }
-      setMenuItems((prev) => prev.filter((mi) => mi.id !== id));
-    } catch (error) {
-      console.error("Error deleting menu item:", error);
-    }
-
+  const deleteMenuItem = (id: string) => {
+    // This is now handled by useDeleteProduct hook in the component
   };
-
   return (
     <BillingContext.Provider
       value={{

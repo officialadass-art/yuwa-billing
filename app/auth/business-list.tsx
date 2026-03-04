@@ -1,33 +1,32 @@
-import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
 import { Business } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { fetch } from "expo/fetch";
 import React, { useEffect, useState } from "react";
 import {
-    FlatList,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
-    Alert
+  Alert,
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from "react-native";
 
 // Country options with flags
@@ -38,8 +37,9 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken, logout } = useAuth();
-  const [businessList, setBusinessList] = useState<Business[]>([]);
+  const { user, selectBusiness, getToken, isAuthenticated, token} = useAuth();
+  const { data:businessList, isLoading, error } = useApiTenants({enabled: isAuthenticated});
+  const {mutate, isPending: isCreatePending} = useCreateApiTenant()
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,33 +51,6 @@ export default function BusinessListScreen() {
   const [zipCode, setZipCode] = useState("");
   const [country, setCountry] = useState("");
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      try {
-        const response = await fetch(
-          `${APIEndpoints.baseURL}${APIEndpoints.business.list}`,
-          {
-            method: "GET",
-            headers: {
-              "content-type": "application/json",
-              Authorization: `Bearer ${getToken()}`,
-            },
-          },
-        );
-        const data = await response.json();
-        setBusinessList(data.data);
-      } catch (error) {
-        console.error("Failed to fetch businesses:", error);
-        logout();
-        router.replace("/auth/welcome");
-      }
-    };
-
-    if (user) {
-      fetchBusinesses();
-    }
-  }, [user]);
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
@@ -97,18 +70,8 @@ export default function BusinessListScreen() {
   };
 
   const handleSaveDetails = async () => {
-    // TODO: POST to API
-    try {
-
-    const response = await fetch(
-      `${APIEndpoints.baseURL}${APIEndpoints.business.create}`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
+    
+    const newBusiness = {
           name: cafeName,
           address: {
             line1: addressLane1,
@@ -118,22 +81,17 @@ export default function BusinessListScreen() {
             postalCode: zipCode,
             country,
           },
-        }),
+    }
+    mutate(newBusiness, {
+      onSuccess: () => {
+        setModalVisible(false);
+        Alert.alert('Business Created Successfully !')
       },
-    );
-    const data = await response.json();
-    if (response.ok) {
-      setBusinessList((prev) => [...prev, data.data]);
-    } else {
-      console.error("Failed to create business:", data);
-    }
-
-    setModalVisible(false);
-
-    } catch (error) {
-      console.error("Failed to create business:", error);
-      Alert.alert("Error", error.message || "Failed to send OTP");
-    }
+      onError: () => {
+        Alert.alert('Failed Creating Business', 'Failed to Create the Business, Please try again')
+        setModalVisible(false);
+      }
+    })
   };
 
   const renderBusinessItem = ({ item }: { item: Business }) => (
@@ -203,14 +161,17 @@ export default function BusinessListScreen() {
         </View>
 
         {/* Business List */}
+        { isLoading &&  <Text style={styles.subtitle}>Loading...</Text>}
+        { !isLoading &&  
         <FlatList
-          data={businessList}
+          data={businessList?.data}
           keyExtractor={(item) => item.id}
           renderItem={renderBusinessItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-        />
+        />}
+        
 
         {/* Add Business Button */}
         <View style={styles.bottomContainer}>

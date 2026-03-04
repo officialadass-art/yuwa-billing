@@ -1,4 +1,3 @@
-import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
   BorderRadius,
   BrandColors,
@@ -6,9 +5,9 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { useVerifyOtpRequest } from "@/hooks/use-api-auth";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { fetch } from 'expo/fetch';
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -27,9 +26,9 @@ export default function OTPScreen() {
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
   const { login } = useAuth();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const inputRefs = useRef<TextInput[]>([]);
+  const {mutate, isPending} = useVerifyOtpRequest();
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -73,33 +72,25 @@ export default function OTPScreen() {
       Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP");
       return;
     }
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.auth.verifyOtp}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    mutate(
+      {phone: `+91${mobile}`, code: otpCode},
+      {
+        onSuccess: (data) => {
+          login({
+            id: data.data.user.uid,
+            name: data.data.user.firstName,
+            mobile: mobile || "",
+          }, data.data.token, data.data.refreshToken);
+          router.replace("/auth/business-list");
         },
-        body: JSON.stringify({ phone: `+91${mobile}`, code: otpCode }),
-      });
-      const data = await response.json();
 
-      if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to verify OTP");
-        throw new Error(data.message || "Failed to verify OTP");
-      } else {
-        login({
-          id: data.data.user.uid,
-          name: data.data.user.firstName,
-          mobile: mobile || "",
-        }, data.data.token, data.data.refreshToken);
-         router.replace("/auth/business-list");
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to verify OTP");
+          return;
+        }
       }
-      setIsLoading(false);
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to verify OTP");
-      return;
-    }
+    )
+    
   };
 
   const handleResendOTP = () => {
@@ -180,10 +171,10 @@ export default function OTPScreen() {
             !otpComplete && styles.verifyButtonDisabled,
           ]}
           onPress={handleVerify}
-          disabled={!otpComplete || isLoading}
+          disabled={!otpComplete || isPending}
           activeOpacity={0.8}
         >
-          {isLoading ? (
+          {isPending ? (
             <Text style={styles.verifyButtonText}>Verifying...</Text>
           ) : (
             <>

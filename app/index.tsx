@@ -3,9 +3,10 @@ import { Redirect } from "expo-router";
 
 
 export default function Index() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   // If user is authenticated, redirect to dashboard
+  console.log('isAuthenticated: ', isAuthenticated)
   if (isAuthenticated) {
     return <Redirect href="/auth/business-list" />;
   } else {

@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useCreateInvoice } from "@/hooks/use-api-invoices";
 
 // const categories = ["All", "Coffee", "Snacks", "Food"];
 
@@ -39,6 +40,7 @@ export default function BillingScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showBillModal, setShowBillModal] = useState(false);
   const {getToken, currentBusiness} = useAuth();
+  const { mutate: createInvoice, isPending: isCreatingInvoice } = useCreateInvoice();
 
   const filteredItems =
     selectedCategory === "All"
@@ -73,29 +75,19 @@ export default function BillingScreen() {
         })
       }
 
-      const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.invoices.create.replace(':tenantId', currentBusiness?.id || '')}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify(requestPayload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save bill: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
+      createInvoice(payload, {
+      onSuccess: (data) => {
         Alert.alert(
-        "Bill Saved",
-        `Bill of ₹${result.data.totalAmount.toFixed(2)} has been saved successfully!`,
+          "Bill Saved",
+          `Bill of ₹${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
           [{ text: "OK", onPress: () => clearBill() }],
         );
+        setShowBillModal(false);
+      },
+      onError: (error) => {
+        Alert.alert("Error", error.message || "Failed to save the bill. Please try again.");
       }
-
+    });
      
     } catch (error) {
       console.error("Error saving bill:", error);
@@ -189,7 +181,7 @@ export default function BillingScreen() {
               </Text>
           </TouchableOpacity>
 
-          {categoryItems.map((category) => (
+          {categoryItems?.map((category) => (
             <TouchableOpacity
               key={category.id}
               style={[

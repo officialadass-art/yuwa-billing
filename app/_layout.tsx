@@ -1,7 +1,7 @@
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -11,6 +11,9 @@ import { BrandColors } from "@/constants/theme";
 import { AuthProvider } from "@/context/AuthContext";
 import { BillingProvider } from "@/context/BillingContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+const queryClient = new QueryClient();
 
 // Custom light theme with our brand colors
 const CafeTheme = {
@@ -47,6 +50,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <BillingProvider>
         <ThemeProvider
@@ -64,5 +68,6 @@ export default function RootLayout() {
         </ThemeProvider>
       </BillingProvider>
     </AuthProvider>
+    </QueryClientProvider>
   );
 }

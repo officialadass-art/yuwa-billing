@@ -1,13 +1,12 @@
-import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
     BorderRadius,
     BrandColors,
     FontSizes,
     Spacing,
 } from "@/constants/theme";
+import { useApiSendOTP } from "@/hooks/use-api-auth";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { fetch } from "expo/fetch";
 import React, { useState } from "react";
 import {
     Alert,
@@ -25,7 +24,7 @@ import {
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const {mutate, isPending} = useApiSendOTP();
 
   const handleSendOTP = async () => {
     if (mobileNumber.length !== 10) {
@@ -36,34 +35,17 @@ export default function LoginScreen() {
       return;
     }
     // Making POST request to send OTP
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `${APIEndpoints.baseURL}${APIEndpoints.auth.sendOtp}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ phone: `+91${mobileNumber}` }),
-        },
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send OTP");
+    mutate(`+91${mobileNumber}`, {
+      onSuccess: () => {
+        router.push({
+          pathname: "/auth/otp",
+          params: { mobile: `${mobileNumber}` },
+        });
+      },
+      onError: (error) => {
+        Alert.alert("Error", error.message || "Failed to send OTP");
       }
-
-      router.push({
-        pathname: "/auth/otp",
-        params: { mobile: `${mobileNumber}` },
-      });
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to send OTP");
-      setIsLoading(false);
-    } finally {
-      setIsLoading(false);
-    }
+    })
   };
 
   return (
@@ -127,10 +109,10 @@ export default function LoginScreen() {
             mobileNumber.length !== 10 && styles.continueButtonDisabled,
           ]}
           onPress={handleSendOTP}
-          disabled={mobileNumber.length !== 10 || isLoading}
+          disabled={mobileNumber.length !== 10 || isPending}
           activeOpacity={0.8}
         >
-          {isLoading ? (
+          {isPending ? (
             <Text style={styles.continueButtonText}>Sending OTP...</Text>
           ) : (
             <>

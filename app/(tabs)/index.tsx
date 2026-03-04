@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { fetch } from "expo/fetch";
+import { useApiDashboard } from "@/hooks/use-api-dashboard";
 
 // Mock data for dashboard
 const todayStats = {
@@ -37,7 +37,12 @@ const recentOrders = [
 
 export default function DashboardScreen() {
   const { currentBusiness, getToken } = useAuth();
-  const [dashboardData, setDashboardData] = React.useState({
+  const { data: dashboardData, isLoading, error } = useApiDashboard({
+      tenantId: currentBusiness?.id,
+      enabled: !!currentBusiness?.id,
+    });
+
+  const defaultData = {
     todaysSalesAmount: 0,
     totalOrdersCount: 0,
     totalSalesAmount: 0,
@@ -49,25 +54,11 @@ export default function DashboardScreen() {
       quantitySold: 150,
       totalSales: 750
     },
-    todaysOrderData: ([] as Invoice[])
-  });
+    todaysOrderData: []
+  };
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-    const response = await fetch(`${APIEndpoints.baseURL}${APIEndpoints.dashboard.summary.replace(":tenantId", currentBusiness?.id || "")}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${getToken()}`,
-        }
-      });
-      const data = (await response.json()) as ApiResponse;
-      if(data.success) {
-        setDashboardData({...data.data});
-      }
-    };
-    fetchDashboardData();
-  }, []);
+  const data = dashboardData?.data || defaultData
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,7 +99,7 @@ export default function DashboardScreen() {
               />
             </View>
             <Text style={styles.statsValue}>
-              ₹{dashboardData.totalSalesAmount.toLocaleString()}
+              ₹{data.totalSalesAmount.toLocaleString()}
             </Text>
             <Text style={styles.statsLabel}>Today's Sales</Text>
           </View>
@@ -121,7 +112,7 @@ export default function DashboardScreen() {
                 color={BrandColors.accent}
               />
             </View>
-            <Text style={styles.statsValueDark}>{dashboardData.todaysOrdersCount}</Text>
+            <Text style={styles.statsValueDark}>{data.todaysOrdersCount}</Text>
             <Text style={styles.statsLabelDark}>Orders</Text>
           </View>
         </View>
@@ -136,7 +127,7 @@ export default function DashboardScreen() {
               />
             </View>
             <Text style={styles.statsValueDark}>
-              ₹{dashboardData.averageOrderAmount.toLocaleString()}
+              ₹{data.averageOrderAmount.toLocaleString()}
             </Text>
             <Text style={styles.statsLabelDark}>Avg. Order</Text>
           </View>
@@ -149,7 +140,7 @@ export default function DashboardScreen() {
                 color={BrandColors.info}
               />
             </View>
-            <Text style={styles.statsValueDark}>{dashboardData.topSellerItem.productName}</Text>
+            <Text style={styles.statsValueDark}>{data.topSellerItem.productName}</Text>
             <Text style={styles.statsLabelDark}>Top Seller</Text>
           </View>
         </View>
@@ -233,7 +224,7 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {dashboardData.todaysOrderData.map((order) => (
+          {data.todaysOrderData.map((order) => (
             <TouchableOpacity key={order.id} style={styles.orderCard}>
               <View style={styles.orderIcon}>
                 <Ionicons
