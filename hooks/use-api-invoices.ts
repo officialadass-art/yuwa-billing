@@ -8,7 +8,7 @@ import { QUERY_KEYS } from '../constants/queryKeys';
  * Get Invoices List Hook
  */
 const fetchInvoices = async (tenantId: string) => {
-  const { data } = await apiClient.get<ApiResponse<Invoice[]>>(
+  const { data } = await apiClient.get<ApiResponse>(
     APIEndpoints.invoices.list.replace(':tenantId', tenantId)
   );
   return data;
@@ -33,7 +33,7 @@ export const useApiInvoices = ({ tenantId, enabled = true, ...options }: UseInvo
  * Get Invoice Details Hook
  */
 const fetchInvoiceDetails = async (tenantId: string, invoiceId: string) => {
-  const { data } = await apiClient.get<ApiResponse<Invoice>>(
+  const { data } = await apiClient.get<ApiResponse>(
     APIEndpoints.invoices.details
       .replace(':tenantId', tenantId)
       .replace(':invoiceId', invoiceId)

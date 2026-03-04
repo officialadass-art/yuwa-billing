@@ -7,9 +7,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  FlatList,
+  Modal,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -18,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { DeviceInfo, Printer, PrinterConstants, usePrintersDiscovery } from 'react-native-esc-pos-printer';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -66,6 +69,14 @@ const MenuItem = ({
 
 export default function ProfileScreen() {
   const { user, currentBusiness, logout } = useAuth();
+  const [showPrinterModal, setShowPrinterModal] = useState(false)
+  const {start, isDiscovering, printers} = usePrintersDiscovery()
+
+  useEffect(() => {
+    if (showPrinterModal) {
+      start();
+    }
+  }, [showPrinterModal])
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -81,6 +92,26 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleTestPrint = async (printer: DeviceInfo) => {
+    const printerInstance = new Printer({
+        target: printer.target,
+        deviceName: printer.deviceName,
+      });
+
+      const res = await printerInstance.addQueueTask(async () => {
+        await Printer.tryToConnectUntil(
+          printerInstance,
+          (status) => status.online.statusCode === PrinterConstants.TRUE
+        );
+        await printerInstance.addText('DUDE!');
+        await printerInstance.addFeedLine();
+        await printerInstance.addCut();
+        const result = await printerInstance.sendData();
+        await printerInstance.disconnect();
+        return result;
+    })
+  }
+
   const handleSwitchBusiness = () => {
     router.push("/auth/business-list");
   };
@@ -90,6 +121,25 @@ export default function ProfileScreen() {
     const { address } = currentBusiness;
     return `${address?.line1 || ''}, ${address?.line2 || ''}, ${address?.city || ''}, ${address?.state || ''} - ${address?.postalCode || ''}`;
   }
+
+    const renderPrinter = ({ item }: { item: DeviceInfo }) => (
+      <View style={styles.itemCard}>
+        
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemName}>{item.deviceName}</Text>
+          <Text style={styles.itemSubInfo}>{item.deviceType}</Text>
+          <Text style={styles.itemSubInfo}>{item.ipAddress} - {item.bdAddress}</Text>
+        </View>
+        <View style={styles.itemActions}>
+          <TouchableOpacity
+            style={styles.itemPrimaryButton}
+            onPress={() => handleTestPrint(item)}
+          >
+            <Ionicons name="print" size={18} color={BrandColors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -187,7 +237,7 @@ export default function ProfileScreen() {
               label="Printer Setup"
               subtitle="Configure receipt printer"
               onPress={() =>
-                Alert.alert("Printer", "Printer setup coming soon")
+                setShowPrinterModal(true)
               }
             />
             <MenuItem
@@ -268,6 +318,66 @@ export default function ProfileScreen() {
           <Text style={styles.versionText}>CafeBill v1.0.0</Text>
         </View>
       </ScrollView>
+
+      <Modal
+          visible={showPrinterModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowPrinterModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  Printers
+                </Text>
+                <TouchableOpacity onPress={() => setShowPrinterModal(false)}>
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={BrandColors.gray[600]}
+                  />
+                </TouchableOpacity>
+              </View>
+  
+              <ScrollView
+                style={styles.modalBody}
+                showsVerticalScrollIndicator={false}
+              >
+
+              {/* Display the list of discovered printers */}
+              <FlatList
+                data={printers}
+                keyExtractor={(item) => item.deviceName}
+                renderItem={renderPrinter}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons
+                      name="cafe-outline"
+                      size={64}
+                      color={BrandColors.gray[300]}
+                    />
+                    <Text style={styles.emptyText}>No Printers found</Text>
+                  </View>
+                }
+              />
+                
+              </ScrollView>
+  
+              {/* Modal Actions */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalPrimaryButton}
+                  onPress={() => setShowPrinterModal(false)}
+                >
+                  <Text style={styles.modalPrimaryButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -412,4 +522,127 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[400],
     marginTop: Spacing.xs,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: BrandColors.white,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    maxHeight: "90%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  modalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  modalBody: {
+    padding: Spacing.lg,
+  },
+  modalActions: {
+    flexDirection: "row",
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[200],
+  },
+  modalSecondaryButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: BrandColors.gray[300],
+    alignItems: "center",
+  },
+  modalSecondaryButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.gray[700],
+  },
+  modalPrimaryButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary,
+    alignItems: "center",
+  },
+  modalPrimaryButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.white,
+  },
+  listContent: {
+    padding: Spacing.lg,
+    paddingTop: 0,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.xxl,
+  },
+  emptyText: {
+    fontSize: FontSizes.lg,
+    color: BrandColors.gray[500],
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  emptyButton: {
+    backgroundColor: BrandColors.accent,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  emptyButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.white,
+  },
+  itemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BrandColors.white,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  itemInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  itemActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  itemPrimaryButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemName: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.gray[900],
+  },
+  itemSubInfo: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    marginTop: 2,
+  }
 });
