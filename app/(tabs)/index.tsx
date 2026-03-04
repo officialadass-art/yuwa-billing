@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
+import { router } from "expo-router";
 
 // Mock data for dashboard
 const todayStats = {
@@ -57,7 +58,7 @@ export default function DashboardScreen() {
     todaysOrderData: []
   };
 
-  const data = dashboardData?.data || defaultData
+  const data = dashboardData || defaultData
 
 
   return (
@@ -149,7 +150,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.navigate('/billing')}>
               <View
                 style={[
                   styles.actionIcon,
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: BrandColors.primary,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.lg,
     borderBottomLeftRadius: BorderRadius.xl,
     borderBottomRightRadius: BorderRadius.xl,
   },
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: -Spacing.lg,
+    marginTop: Spacing.sm,
     paddingHorizontal: Spacing.lg,
   },
   statsContainer: {

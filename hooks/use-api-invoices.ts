@@ -1,8 +1,8 @@
 import { APIEndpoints } from '@/constants/apiEndpoint';
+import { ApiResponse, Invoice } from '@/types';
 import { useMutation, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import { QUERY_KEYS } from '../constants/queryKeys';
-import { ApiResponse, Invoice } from '@/types';
 
 /**
  * Get Invoices List Hook
@@ -60,10 +60,10 @@ export const useApiInvoiceDetails = ({ tenantId, invoiceId, enabled = true, ...o
 /**
  * Create Invoice Hook
  */
-interface CreateInvoicePayload extends Omit<Invoice, 'id' | 'createdAt'> {}
+interface CreateInvoicePayload extends Omit<Invoice, 'id' | 'createdAt' | 'totalAmount' | 'tenantId' | 'subTotal' | 'status'> {}
 
 const createInvoice = async (tenantId: string, invoice: CreateInvoicePayload) => {
-  const { data } = await apiClient.post<ApiResponse<Invoice>>(
+  const { data } = await apiClient.post<ApiResponse>(
     APIEndpoints.invoices.create.replace(':tenantId', tenantId),
     invoice
   );
@@ -77,7 +77,8 @@ export const useCreateInvoice = () => {
     mutationFn: ({ tenantId, invoice }: { tenantId: string; invoice: CreateInvoicePayload }) =>
       createInvoice(tenantId, invoice),
     onSuccess: (_, { tenantId }) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INVOICES, QUERY_KEYS.DASHBOARD, tenantId] });
+      queryClient.invalidateQueries({ queryKey: [ QUERY_KEYS.DASHBOARD, tenantId] });
+      queryClient.invalidateQueries({ queryKey: [ QUERY_KEYS.INVOICES, tenantId] });
     },
     onError: (error) => {
       console.log('Failed to create invoice', error);

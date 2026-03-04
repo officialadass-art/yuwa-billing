@@ -1,8 +1,8 @@
 import { APIEndpoints } from '@/constants/apiEndpoint';
+import { ApiResponse } from '@/types';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import { QUERY_KEYS } from '../constants/queryKeys';
-import { ApiResponse } from '@/types';
 
 interface DashboardSummary {
   todaysSalesAmount: number;
@@ -20,10 +20,10 @@ interface DashboardSummary {
 }
 
 const fetchDashboardSummary = async (tenantId: string) => {
-  const { data } = await apiClient.get<ApiResponse<DashboardSummary>>(
+  const { data } = await apiClient.get<ApiResponse>(
     APIEndpoints.dashboard.summary.replace(':tenantId', tenantId)
   );
-  return data;
+  return data.data;
 };
 
 interface UseDashboardOptions extends Omit<UseQueryOptions<DashboardSummary, Error>, 'queryKey' | 'queryFn'> {

@@ -60,20 +60,28 @@ export default function BillingScreen() {
     }
     try {
 
-      let requestPayload = {
-        customerName: "Customer",
-        customerPhone: "0000000000",
-        discount: 0,
-        paymentMethod: "cash",
-        items: billItems.map(bi => {
-          return {
+      const payload = {
+        tenantId: currentBusiness?.id || "",
+        invoice: {
+          tenantId: currentBusiness?.id || "",
+          customerName: "Customer",
+          customerPhone: "0000000000",
+          items: billItems.map(bi => ({
             productId: bi.menuItem.id,
             productName: bi.menuItem.name,
             quantity: bi.quantity,
-            unitPrice: bi.menuItem.price
-          }
-        })
-      }
+            unitPrice: bi.menuItem.price,
+            totalPrice: bi.subtotal,
+          })),
+          // totalAmount: total,
+          // subTotal: subtotal,
+          // tax,
+          discount: 0,
+          paymentMethod: "cash" as const,
+          status: "paid" as const,
+          // createdAt: new Date().toISOString(),
+        }
+      };
 
       createInvoice(payload, {
       onSuccess: (data) => {
