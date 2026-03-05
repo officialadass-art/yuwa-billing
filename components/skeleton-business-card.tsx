@@ -1,4 +1,4 @@
-import { BrandColors, BorderRadius, Spacing } from "@/constants/theme";
+import { BorderRadius, BrandColors, Spacing } from "@/constants/theme";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
