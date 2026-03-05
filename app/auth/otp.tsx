@@ -1,8 +1,8 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useVerifyOtpRequest } from "@/hooks/use-api-auth";
@@ -10,17 +10,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OTPScreen() {
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
@@ -28,7 +28,7 @@ export default function OTPScreen() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(30);
   const inputRefs = useRef<TextInput[]>([]);
-  const {mutate, isPending} = useVerifyOtpRequest();
+  const { mutate, isPending } = useVerifyOtpRequest();
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -73,24 +73,27 @@ export default function OTPScreen() {
       return;
     }
     mutate(
-      {phone: `+91${mobile}`, code: otpCode},
+      { phone: `+91${mobile}`, code: otpCode },
       {
         onSuccess: (data) => {
-          login({
-            id: data.data.user.uid,
-            name: data.data.user.firstName,
-            mobile: mobile || "",
-          }, data.data.token, data.data.refreshToken);
+          login(
+            {
+              id: data.data.user.uid,
+              name: data.data.user.firstName,
+              mobile: mobile || "",
+            },
+            data.data.token,
+            data.data.refreshToken,
+          );
           router.replace("/auth/business-list");
         },
 
         onError: (error) => {
           Alert.alert("Error", error.message || "Failed to verify OTP");
           return;
-        }
-      }
-    )
-    
+        },
+      },
+    );
   };
 
   const handleResendOTP = () => {

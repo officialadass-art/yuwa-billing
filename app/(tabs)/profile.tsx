@@ -1,8 +1,8 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -119,8 +119,8 @@ export default function ProfileScreen() {
   const getCafeAddress = () => {
     if (!currentBusiness) return "Your Cafe Address";
     const { address } = currentBusiness;
-    return `${address?.line1 || ''}, ${address?.line2 || ''}, ${address?.city || ''}, ${address?.state || ''} - ${address?.postalCode || ''}`;
-  }
+    return `${address?.line1 || ""}, ${address?.line2 || ""}, ${address?.city || ""}, ${address?.state || ""} - ${address?.postalCode || ""}`;
+  };
 
     const renderPrinter = ({ item }: { item: DeviceInfo }) => (
       <View style={styles.itemCard}>
@@ -167,9 +167,7 @@ export default function ProfileScreen() {
             <Text style={styles.businessName}>
               {currentBusiness?.name || "CafeBill"}
             </Text>
-            <Text style={styles.businessAddress}>
-              {getCafeAddress()}
-            </Text>
+            <Text style={styles.businessAddress}>{getCafeAddress()}</Text>
           </View>
           <TouchableOpacity style={styles.editBusinessButton}>
             <Ionicons name="pencil" size={18} color={BrandColors.primary} />
@@ -220,7 +218,9 @@ export default function ProfileScreen() {
             <MenuItem
               icon="document-text-outline"
               label="GST Details"
-              subtitle={currentBusiness?.leagalInfo?.gstNumber || "Not configured"}
+              subtitle={
+                currentBusiness?.leagalInfo?.gstNumber || "Not configured"
+              }
               onPress={() =>
                 Alert.alert("GST", "GST configuration coming soon")
               }

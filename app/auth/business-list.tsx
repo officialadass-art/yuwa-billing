@@ -1,33 +1,33 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
 import { Business } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Alert,
+    FlatList,
+    Image,
+    Keyboard,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Country options with flags
 const COUNTRIES = [
@@ -37,9 +37,13 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken, isAuthenticated, token} = useAuth();
-  const { data:businessList, isLoading, error } = useApiTenants({enabled: isAuthenticated});
-  const {mutate, isPending: isCreatePending} = useCreateApiTenant()
+  const { user, selectBusiness, getToken, isAuthenticated, token } = useAuth();
+  const {
+    data: businessList,
+    isLoading,
+    error,
+  } = useApiTenants({ enabled: isAuthenticated });
+  const { mutate, isPending: isCreatePending } = useCreateApiTenant();
 
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -70,28 +74,30 @@ export default function BusinessListScreen() {
   };
 
   const handleSaveDetails = async () => {
-    
     const newBusiness = {
-          name: cafeName,
-          address: {
-            line1: addressLane1,
-            line2: addressLane2,
-            city,
-            state,
-            postalCode: zipCode,
-            country,
-          },
-    }
+      name: cafeName,
+      address: {
+        line1: addressLane1,
+        line2: addressLane2,
+        city,
+        state,
+        postalCode: zipCode,
+        country,
+      },
+    };
     mutate(newBusiness, {
       onSuccess: () => {
         setModalVisible(false);
-        Alert.alert('Business Created Successfully !')
+        Alert.alert("Business Created Successfully !");
       },
       onError: () => {
-        Alert.alert('Failed Creating Business', 'Failed to Create the Business, Please try again')
+        Alert.alert(
+          "Failed Creating Business",
+          "Failed to Create the Business, Please try again",
+        );
         setModalVisible(false);
-      }
-    })
+      },
+    });
   };
 
   const renderBusinessItem = ({ item }: { item: Business }) => (
@@ -161,17 +167,17 @@ export default function BusinessListScreen() {
         </View>
 
         {/* Business List */}
-        { isLoading &&  <Text style={styles.subtitle}>Loading...</Text>}
-        { !isLoading &&  
-        <FlatList
-          data={businessList?.data}
-          keyExtractor={(item) => item.id}
-          renderItem={renderBusinessItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        />}
-        
+        {isLoading && <Text style={styles.subtitle}>Loading...</Text>}
+        {!isLoading && (
+          <FlatList
+            data={businessList?.data}
+            keyExtractor={(item) => item.id}
+            renderItem={renderBusinessItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
 
         {/* Add Business Button */}
         <View style={styles.bottomContainer}>

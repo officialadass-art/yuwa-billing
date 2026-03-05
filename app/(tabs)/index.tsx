@@ -1,25 +1,23 @@
-import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { ApiResponse, Invoice } from "@/types";
-import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect } from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React from "react";
+import {
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Mock data for dashboard
 const todayStats = {
@@ -38,10 +36,14 @@ const recentOrders = [
 
 export default function DashboardScreen() {
   const { currentBusiness, getToken } = useAuth();
-  const { data: dashboardData, isLoading, error } = useApiDashboard({
-      tenantId: currentBusiness?.id,
-      enabled: !!currentBusiness?.id,
-    });
+  const {
+    data: dashboardData,
+    isLoading,
+    error,
+  } = useApiDashboard({
+    tenantId: currentBusiness?.id,
+    enabled: !!currentBusiness?.id,
+  });
 
   const defaultData = {
     todaysSalesAmount: 0,
@@ -53,13 +55,12 @@ export default function DashboardScreen() {
       productId: "prod-123",
       productName: "Cappuccino",
       quantitySold: 150,
-      totalSales: 750
+      totalSales: 750,
     },
-    todaysOrderData: []
+    todaysOrderData: [],
   };
 
-  const data = dashboardData || defaultData
-
+  const data = dashboardData || defaultData;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -141,7 +142,9 @@ export default function DashboardScreen() {
                 color={BrandColors.info}
               />
             </View>
-            <Text style={styles.statsValueDark}>{data.topSellerItem.productName}</Text>
+            <Text style={styles.statsValueDark}>
+              {data.topSellerItem.productName}
+            </Text>
             <Text style={styles.statsLabelDark}>Top Seller</Text>
           </View>
         </View>
@@ -150,7 +153,10 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={() => router.navigate('/billing')}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.navigate("/billing")}
+            >
               <View
                 style={[
                   styles.actionIcon,

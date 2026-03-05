@@ -1,43 +1,54 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
+import {
+    useCreateProduct,
+    useDeleteProduct,
+    useUpdateProduct,
+} from "@/hooks/use-api-products";
 import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import {useCreateProduct, useUpdateProduct, useDeleteProduct} from '@/hooks/use-api-products'
-import { useAuth } from "@/context/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
 export default function ItemsScreen() {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, categoryItems } =
-    useBilling();
+  const {
+    menuItems,
+    addMenuItem,
+    updateMenuItem,
+    deleteMenuItem,
+    categoryItems,
+  } = useBilling();
   const { currentBusiness } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const { mutate: createProduct, isPending: isCreatingProduct } = useCreateProduct();
-  const { mutate: updateProduct, isPending: isUpdatingProduct } = useUpdateProduct();
-  const { mutate: deleteProduct, isPending: isDeletingProduct } = useDeleteProduct();
-
+  const { mutate: createProduct, isPending: isCreatingProduct } =
+    useCreateProduct();
+  const { mutate: updateProduct, isPending: isUpdatingProduct } =
+    useUpdateProduct();
+  const { mutate: deleteProduct, isPending: isDeletingProduct } =
+    useDeleteProduct();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -120,7 +131,7 @@ export default function ItemsScreen() {
           onError: (error) => {
             Alert.alert("Error", error.message || "Failed to update item");
           },
-        }
+        },
       );
     } else {
       // Create new item
@@ -137,7 +148,7 @@ export default function ItemsScreen() {
           onError: (error) => {
             Alert.alert("Error", error.message || "Failed to add item");
           },
-        }
+        },
       );
     }
   };
@@ -176,29 +187,36 @@ export default function ItemsScreen() {
   // };
 
   const handleDelete = (item: MenuItem) => {
-    Alert.alert("Delete Item", `Are you sure you want to delete "${item.name}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          deleteProduct(
-            {
-              tenantId: currentBusiness?.id || "",
-              productId: item.id,
-            },
-            {
-              onSuccess: () => {
-                Alert.alert("Success", "Item deleted successfully");
+    Alert.alert(
+      "Delete Item",
+      `Are you sure you want to delete "${item.name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteProduct(
+              {
+                tenantId: currentBusiness?.id || "",
+                productId: item.id,
               },
-              onError: (error) => {
-                Alert.alert("Error", error.message || "Failed to delete item");
+              {
+                onSuccess: () => {
+                  Alert.alert("Success", "Item deleted successfully");
+                },
+                onError: (error) => {
+                  Alert.alert(
+                    "Error",
+                    error.message || "Failed to delete item",
+                  );
+                },
               },
-            }
-          );
+            );
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const renderItem = ({ item }: { item: MenuItem }) => (
@@ -303,7 +321,7 @@ export default function ItemsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingItem ? "Edit Item" : "Add New Item" }
+                {editingItem ? "Edit Item" : "Add New Item"}
               </Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons
@@ -437,7 +455,10 @@ export default function ItemsScreen() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveItem}>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveItem}
+              >
                 <Text style={styles.saveButtonText}>
                   {editingItem ? "Update" : "Add Item"}
                 </Text>
