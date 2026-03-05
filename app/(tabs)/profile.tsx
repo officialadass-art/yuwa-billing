@@ -1,3 +1,4 @@
+import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
     BorderRadius,
     BrandColors,
@@ -344,8 +345,9 @@ export default function ProfileScreen() {
                 style={styles.modalBody}
               >
 
+              {isDiscovering && <SkeletonBusinessList />}
               {/* Display the list of discovered printers */}
-              <FlatList
+              {!isDiscovering && <FlatList
                 data={printers}
                 keyExtractor={(item) => item.deviceName}
                 renderItem={renderPrinter}
@@ -362,6 +364,7 @@ export default function ProfileScreen() {
                   </View>
                 }
               />
+              }
                 
               </View>
   

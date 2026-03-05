@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,12 +10,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -35,14 +35,14 @@ const recentOrders = [
 ];
 
 export default function DashboardScreen() {
-  const { currentBusiness, getToken } = useAuth();
+  const { currentBusiness, getToken, isAuthenticated } = useAuth();
   const {
     data: dashboardData,
     isLoading,
     error,
   } = useApiDashboard({
     tenantId: currentBusiness?.id,
-    enabled: !!currentBusiness?.id,
+    enabled: (!!currentBusiness?.id && isAuthenticated)
   });
 
   const defaultData = {

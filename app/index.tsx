@@ -6,7 +6,6 @@ export default function Index() {
   const { isAuthenticated, user } = useAuth();
   
   // If user is authenticated, redirect to dashboard
-  console.log('isAuthenticated: ', isAuthenticated)
   if (isAuthenticated) {
     return <Redirect href="/auth/business-list" />;
   } else {

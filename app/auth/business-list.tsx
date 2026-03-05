@@ -10,6 +10,7 @@ import { Business } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
     Alert,
     FlatList,
@@ -167,7 +168,7 @@ export default function BusinessListScreen() {
         </View>
 
         {/* Business List */}
-        {isLoading && <Text style={styles.subtitle}>Loading...</Text>}
+        {isLoading && <SkeletonBusinessList />}
         {!isLoading && (
           <FlatList
             data={businessList?.data}

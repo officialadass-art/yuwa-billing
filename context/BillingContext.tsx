@@ -100,7 +100,7 @@ const BillingContext = createContext<BillingContextType | undefined>(undefined);
 // ];
 
 export function BillingProvider({ children }: { children: ReactNode }) {
-  const {currentBusiness, getToken} = useAuth();
+  const {currentBusiness, getToken, isAuthenticated} = useAuth();
   const [billItems, setBillItems] = useState<BillItem[]>([]);
   const [currentBill, setCurrentBill] = useState<Bill | null>(null);
 
@@ -160,12 +160,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   // Use the hooks instead of fetch
   const { data: menuItems = [] } = useApiProducts({
     tenantId: currentBusiness?.id,
-    enabled: !!currentBusiness?.id,
+    enabled: (!!currentBusiness?.id && isAuthenticated),
   });
 
   const { data: categoryItems = [] } = useApiCategories({
     tenantId: currentBusiness?.id,
-    enabled: !!currentBusiness?.id,
+    enabled: (!!currentBusiness?.id && isAuthenticated),
   });
 
   const addToBill = (item: MenuItem) => {

@@ -15,7 +15,7 @@ export async function SecureStoreGet(key: string) {
   if (Platform.OS === 'web') {
     return localStorage.getItem(key);
   }
-  let result = SecureStore.getItemAsync(key);
+  let result = await SecureStore.getItemAsync(key);
   return result;
 }
 
@@ -40,9 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const saveAuthState = async () => {
-    setTimeout(async () => {
-      await SecureStoreSave(AUTH_STATE_KEY, JSON.stringify(authState));
-    }, 500);
+    await SecureStoreSave(AUTH_STATE_KEY, JSON.stringify(authState));
   };
   
   // Load auth state from secure storage on app start
@@ -57,12 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // // Set auth state in secure storage whenever it changes
-  // useEffect(() => {
-  //   const saveAuthState = async () => {
-  //     await SecureStoreSave(AUTH_STATE_KEY, JSON.stringify(authState));
-  //   };
-  //   saveAuthState();
-  // }, [authState.token, authState.refreshToken, authState.isAuthenticated, authState.user, authState.currentBusiness]);
+  useEffect(() => {
+    saveAuthState();
+  }, [authState.token, authState.refreshToken, authState.isAuthenticated, authState.user, authState.currentBusiness]);
 
   const login = (user: User, token?:string, refreshToken?:string) => {
     setAuthState((prev) => ({
@@ -72,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: token || prev.token,
       refreshToken: refreshToken || prev.refreshToken,
     }));
-    saveAuthState();
+    // saveAuthState();
   };
 
   const logout = () => {
@@ -83,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: null,
       refreshToken: null,
     });
-    saveAuthState();
+    // saveAuthState();
   };
 
   const selectBusiness = (business: Business) => {
@@ -91,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...prev,
       currentBusiness: business,
     }));
-    saveAuthState();
+    // saveAuthState();
   };
 
   const getToken = () => {
