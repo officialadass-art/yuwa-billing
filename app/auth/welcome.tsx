@@ -1,27 +1,26 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
 import React from "react";
 import {
-  Image,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useAuth } from "@/context/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
-
   const { isAuthenticated } = useAuth();
-  
+
   // If user is authenticated, redirect to dashboard
   if (isAuthenticated) {
     return <Redirect href="/auth/business-list" />;

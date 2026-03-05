@@ -1,30 +1,30 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useApiSendOTP } from "@/hooks/use-api-auth";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState("");
-  const {mutate, isPending} = useApiSendOTP();
+  const { mutate, isPending } = useApiSendOTP();
 
   const handleSendOTP = async () => {
     if (mobileNumber.length !== 10) {
@@ -44,8 +44,8 @@ export default function LoginScreen() {
       },
       onError: (error) => {
         Alert.alert("Error", error.message || "Failed to send OTP");
-      }
-    })
+      },
+    });
   };
 
   return (

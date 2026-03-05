@@ -1,23 +1,23 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -88,8 +88,8 @@ export default function ProfileScreen() {
   const getCafeAddress = () => {
     if (!currentBusiness) return "Your Cafe Address";
     const { address } = currentBusiness;
-    return `${address?.line1 || ''}, ${address?.line2 || ''}, ${address?.city || ''}, ${address?.state || ''} - ${address?.postalCode || ''}`;
-  }
+    return `${address?.line1 || ""}, ${address?.line2 || ""}, ${address?.city || ""}, ${address?.state || ""} - ${address?.postalCode || ""}`;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -117,9 +117,7 @@ export default function ProfileScreen() {
             <Text style={styles.businessName}>
               {currentBusiness?.name || "CafeBill"}
             </Text>
-            <Text style={styles.businessAddress}>
-              {getCafeAddress()}
-            </Text>
+            <Text style={styles.businessAddress}>{getCafeAddress()}</Text>
           </View>
           <TouchableOpacity style={styles.editBusinessButton}>
             <Ionicons name="pencil" size={18} color={BrandColors.primary} />
@@ -170,7 +168,9 @@ export default function ProfileScreen() {
             <MenuItem
               icon="document-text-outline"
               label="GST Details"
-              subtitle={currentBusiness?.leagalInfo?.gstNumber || "Not configured"}
+              subtitle={
+                currentBusiness?.leagalInfo?.gstNumber || "Not configured"
+              }
               onPress={() =>
                 Alert.alert("GST", "GST configuration coming soon")
               }

@@ -1,29 +1,28 @@
-import { APIEndpoints } from "@/constants/apiEndpoint";
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
+import { useCreateInvoice } from "@/hooks/use-api-invoices";
 import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useCreateInvoice } from "@/hooks/use-api-invoices";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // const categories = ["All", "Coffee", "Snacks", "Food"];
 
@@ -35,12 +34,13 @@ export default function BillingScreen() {
     updateQuantity,
     clearBill,
     calculateTotal,
-    categoryItems
+    categoryItems,
   } = useBilling();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showBillModal, setShowBillModal] = useState(false);
-  const {getToken, currentBusiness} = useAuth();
-  const { mutate: createInvoice, isPending: isCreatingInvoice } = useCreateInvoice();
+  const { getToken, currentBusiness } = useAuth();
+  const { mutate: createInvoice, isPending: isCreatingInvoice } =
+    useCreateInvoice();
 
   const filteredItems =
     selectedCategory === "All"
@@ -59,14 +59,13 @@ export default function BillingScreen() {
       return;
     }
     try {
-
       const payload = {
         tenantId: currentBusiness?.id || "",
         invoice: {
           tenantId: currentBusiness?.id || "",
           customerName: "Customer",
           customerPhone: "0000000000",
-          items: billItems.map(bi => ({
+          items: billItems.map((bi) => ({
             productId: bi.menuItem.id,
             productName: bi.menuItem.name,
             quantity: bi.quantity,
@@ -80,28 +79,29 @@ export default function BillingScreen() {
           paymentMethod: "cash" as const,
           status: "paid" as const,
           // createdAt: new Date().toISOString(),
-        }
+        },
       };
 
       createInvoice(payload, {
-      onSuccess: (data) => {
-        Alert.alert(
-          "Bill Saved",
-          `Bill of ₹${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
-          [{ text: "OK", onPress: () => clearBill() }],
-        );
-        setShowBillModal(false);
-      },
-      onError: (error) => {
-        Alert.alert("Error", error.message || "Failed to save the bill. Please try again.");
-      }
-    });
-     
+        onSuccess: (data) => {
+          Alert.alert(
+            "Bill Saved",
+            `Bill of ₹${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
+            [{ text: "OK", onPress: () => clearBill() }],
+          );
+          setShowBillModal(false);
+        },
+        onError: (error) => {
+          Alert.alert(
+            "Error",
+            error.message || "Failed to save the bill. Please try again.",
+          );
+        },
+      });
     } catch (error) {
       console.error("Error saving bill:", error);
       Alert.alert("Error", "Failed to save the bill. Please try again.");
     }
-    
   };
 
   const handlePrintBill = () => {
@@ -170,23 +170,22 @@ export default function BillingScreen() {
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-
           <TouchableOpacity
-              key={"All"}
+            key={"All"}
+            style={[
+              styles.categoryButton,
+              selectedCategory === "All" && styles.categoryButtonActive,
+            ]}
+            onPress={() => setSelectedCategory("All")}
+          >
+            <Text
               style={[
-                styles.categoryButton,
-                selectedCategory === "All" && styles.categoryButtonActive,
+                styles.categoryText,
+                selectedCategory === "All" && styles.categoryTextActive,
               ]}
-              onPress={() => setSelectedCategory("All")}
             >
-              <Text
-                style={[
-                  styles.categoryText,
-                  selectedCategory === "All" && styles.categoryTextActive,
-                ]}
-              >
-                All
-              </Text>
+              All
+            </Text>
           </TouchableOpacity>
 
           {categoryItems?.map((category) => (
