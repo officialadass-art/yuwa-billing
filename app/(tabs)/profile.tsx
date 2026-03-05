@@ -1,9 +1,9 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { DeviceInfo, Printer, PrinterConstants, usePrintersDiscovery } from 'react-native-esc-pos-printer';
+import { DeviceInfo, DiscoveryPortType, Printer, PrinterConstants, usePrintersDiscovery } from 'react-native-esc-pos-printer';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -75,7 +75,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (showPrinterModal) {
-      start();
+      start({timeout: 10000, filterOption: {portType: DiscoveryPortType.PORTTYPE_ALL}});
     }
   }, [showPrinterModal])
 
