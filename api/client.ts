@@ -13,10 +13,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     const authState = await SecureStoreGet(AUTH_STATE_KEY) || ''
-    const jsonParse = JSON.parse(authState) as AuthState
-    console.log('Auth State:', (authState && jsonParse.isAuthenticated && jsonParse.token?.length))
-    if (authState && jsonParse.isAuthenticated && jsonParse.token) {
-      config.headers.Authorization = `Bearer ${jsonParse.token}`;
+    if (authState && authState.length > 0){
+      const jsonParse = JSON.parse(authState) as AuthState
+      console.log('Auth State:', (authState && jsonParse.isAuthenticated && jsonParse.token?.length))
+      if (authState && jsonParse.isAuthenticated && jsonParse.token) {
+        config.headers.Authorization = `Bearer ${jsonParse.token}`;
+      }
     }
     return config;
   },
