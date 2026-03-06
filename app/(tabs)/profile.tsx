@@ -11,9 +11,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -21,7 +19,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { DeviceInfo, DiscoveryPortType, Printer, PrinterConstants, usePrintersDiscovery } from 'react-native-esc-pos-printer';
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  BLEPrinter,
+  IBLEPrinter,
+} from "react-native-thermal-receipt-printer-image-qr";
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -70,14 +72,45 @@ const MenuItem = ({
 
 export default function ProfileScreen() {
   const { user, currentBusiness, logout } = useAuth();
-  const [showPrinterModal, setShowPrinterModal] = useState(false)
-  const {start, isDiscovering, printers} = usePrintersDiscovery()
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
+  const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
+  const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
+    null,
+  );
+  const [connectedMacAddress, setConnectedMacAddress] = useState<string | null>(
+    null,
+  );
+  const [isDiscovering, setIsDiscovering] = useState(false);
 
   useEffect(() => {
     if (showPrinterModal) {
-      start({timeout: 10000, filterOption: {portType: DiscoveryPortType.PORTTYPE_ALL}});
+      discoverPrinters();
     }
-  }, [showPrinterModal])
+  }, [showPrinterModal]);
+
+  const discoverPrinters = async () => {
+    try {
+      setIsDiscovering(true);
+      console.log("Initializing BLEPrinter...");
+      await BLEPrinter.init();
+      console.log("Getting device list...");
+      const deviceList = await BLEPrinter.getDeviceList();
+      console.log("Devices found count:", deviceList?.length);
+      if (deviceList && deviceList.length > 0) {
+        console.log(
+          "First device structure:",
+          JSON.stringify(deviceList[0], null, 2),
+        );
+        console.log("First device keys:", Object.keys(deviceList[0]));
+      }
+      setPrinters(deviceList || []);
+    } catch (error) {
+      console.error("Printer discovery error:", error);
+      Alert.alert("Error", "Failed to discover printers: " + String(error));
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -93,25 +126,45 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const handleTestPrint = async (printer: DeviceInfo) => {
-    const printerInstance = new Printer({
-        target: printer.target,
-        deviceName: printer.deviceName,
-      });
+  const handleConnectPrinter = async (printer: IBLEPrinter) => {
+    try {
+      console.log("Connecting to printer:", printer);
+      const macAddress = printer.inner_mac_address?.trim() || "";
+      console.log("MAC Address:", macAddress);
+      Alert.alert("Connecting", "Connecting to " + printer.device_name + "...");
 
-      const res = await printerInstance.addQueueTask(async () => {
-        await Printer.tryToConnectUntil(
-          printerInstance,
-          (status) => status.online.statusCode === PrinterConstants.TRUE
-        );
-        await printerInstance.addText('DUDE!');
-        await printerInstance.addFeedLine();
-        await printerInstance.addCut();
-        const result = await printerInstance.sendData();
-        await printerInstance.disconnect();
-        return result;
-    })
-  }
+      await BLEPrinter.connectPrinter(macAddress);
+      console.log("Connected successfully");
+
+      setConnectedPrinter(printer);
+      setConnectedMacAddress(macAddress);
+      Alert.alert("Success", "Connected to " + printer.device_name);
+    } catch (error) {
+      console.error("Connection error:", error);
+      Alert.alert("Error", "Failed to connect: " + String(error));
+    }
+  };
+
+  const handleTestPrint = async (printer: IBLEPrinter) => {
+    try {
+      console.log("Test printing on printer:", printer);
+      Alert.alert("Printing", "Sending test print...");
+
+      await BLEPrinter.connectPrinter(printer.inner_mac_address);
+      console.log("Connected successfully");
+
+      await BLEPrinter.printText("<C>Test Print</C>\n");
+      await BLEPrinter.printText("--------------------------------\n");
+      await BLEPrinter.printText("Printer is working!\n");
+      await BLEPrinter.printText("--------------------------------\n\n\n");
+
+      Alert.alert("Success", "Test print sent successfully!");
+      console.log("Print completed");
+    } catch (error) {
+      console.error("Print error:", error);
+      Alert.alert("Error", "Failed to print: " + String(error));
+    }
+  };
 
   const handleSwitchBusiness = () => {
     router.push("/auth/business-list");
@@ -123,24 +176,41 @@ export default function ProfileScreen() {
     return `${address?.line1 || ""}, ${address?.line2 || ""}, ${address?.city || ""}, ${address?.state || ""} - ${address?.postalCode || ""}`;
   };
 
-    const renderPrinter = ({ item }: { item: DeviceInfo }) => (
-      <View style={styles.itemCard}>
-        
+  const renderPrinter = ({ item }: { item: IBLEPrinter }) => {
+    // Extract device name from the printer object
+    const printerName = (item as any).device_name || "Unknown Printer";
+    const macAddress = item.inner_mac_address;
+    const isConnected = connectedPrinter?.inner_mac_address === macAddress;
+
+    return (
+      <View style={[styles.itemCard, isConnected && styles.itemCardConnected]}>
         <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.deviceName}</Text>
-          <Text style={styles.itemSubInfo}>{item.deviceType}</Text>
-          <Text style={styles.itemSubInfo}>{item.ipAddress} - {item.bdAddress}</Text>
+          <Text style={styles.itemName}>{printerName}</Text>
+          <Text style={styles.itemSubInfo}>{macAddress}</Text>
+          {isConnected && (
+            <Text style={styles.connectedBadge}>✓ Connected</Text>
+          )}
         </View>
         <View style={styles.itemActions}>
           <TouchableOpacity
-            style={styles.itemPrimaryButton}
-            onPress={() => handleTestPrint(item)}
+            style={[
+              styles.itemPrimaryButton,
+              isConnected && styles.itemPrimaryButtonConnected,
+            ]}
+            onPress={() =>
+              isConnected ? handleTestPrint(item) : handleConnectPrinter(item)
+            }
           >
-            <Ionicons name="print" size={18} color={BrandColors.primary} />
+            <Ionicons
+              name={isConnected ? "print" : "link"}
+              size={18}
+              color={BrandColors.primary}
+            />
           </TouchableOpacity>
         </View>
       </View>
     );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -237,9 +307,7 @@ export default function ProfileScreen() {
               icon="print-outline"
               label="Printer Setup"
               subtitle="Configure receipt printer"
-              onPress={() =>
-                setShowPrinterModal(true)
-              }
+              onPress={() => setShowPrinterModal(true)}
             />
             <MenuItem
               icon="notifications-outline"
@@ -321,17 +389,26 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <Modal
-          visible={showPrinterModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowPrinterModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  Printers
-                </Text>
+        visible={showPrinterModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrinterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Printers</Text>
+              <View style={styles.modalHeaderActions}>
+                <TouchableOpacity
+                  onPress={discoverPrinters}
+                  style={styles.refreshButton}
+                >
+                  <Ionicons
+                    name="refresh"
+                    size={20}
+                    color={BrandColors.primary}
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowPrinterModal(false)}>
                   <Ionicons
                     name="close"
@@ -340,45 +417,76 @@ export default function ProfileScreen() {
                   />
                 </TouchableOpacity>
               </View>
-  
-              <View
-                style={styles.modalBody}
-              >
+            </View>
 
+            <View style={styles.modalBody}>
               {isDiscovering && <SkeletonBusinessList />}
-              {/* Display the list of discovered printers */}
-              {!isDiscovering && <FlatList
-                data={printers}
-                keyExtractor={(item) => item.deviceName}
-                renderItem={renderPrinter}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Ionicons
-                      name="cafe-outline"
-                      size={64}
-                      color={BrandColors.gray[300]}
-                    />
-                    <Text style={styles.emptyText}>No Printers found</Text>
+              {/* Display the Connected and Available printers */}
+              {!isDiscovering && (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {/* Connected Printers Section */}
+                  {connectedPrinter && (
+                    <View style={styles.modalSection}>
+                      <Text style={styles.modalSectionTitle}>
+                        ✓ Connected Printer
+                      </Text>
+                      {renderPrinter({ item: connectedPrinter })}
+                    </View>
+                  )}
+
+                  {/* Available Printers Section */}
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>
+                      Available Printers
+                    </Text>
+                    {printers.filter((p) => {
+                      const macAddress = p.inner_mac_address?.trim() || "";
+                      return (
+                        !connectedMacAddress ||
+                        macAddress !== connectedMacAddress
+                      );
+                    }).length > 0 ? (
+                      printers
+                        .filter((p) => {
+                          const macAddress = p.inner_mac_address?.trim() || "";
+                          return (
+                            !connectedMacAddress ||
+                            macAddress !== connectedMacAddress
+                          );
+                        })
+                        .map((printer) => (
+                          <View key={printer.inner_mac_address}>
+                            {renderPrinter({ item: printer })}
+                          </View>
+                        ))
+                    ) : (
+                      <View style={styles.emptyContainer}>
+                        <Ionicons
+                          name="cafe-outline"
+                          size={64}
+                          color={BrandColors.gray[300]}
+                        />
+                        <Text style={styles.emptyText}>
+                          No other printers available
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                }
-              />
-              }
-                
-              </View>
-  
-              {/* Modal Actions */}
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.modalPrimaryButton}
-                  onPress={() => setShowPrinterModal(false)}
-                >
-                  <Text style={styles.modalPrimaryButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+                </ScrollView>
+              )}
+            </View>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={() => setShowPrinterModal(false)}
+              >
+                <Text style={styles.modalPrimaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -548,6 +656,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: BrandColors.gray[900],
   },
+  modalHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  refreshButton: {
+    padding: Spacing.sm,
+  },
   modalBody: {
     padding: Spacing.lg,
   },
@@ -646,5 +762,29 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: BrandColors.gray[500],
     marginTop: 2,
-  }
+  },
+  itemCardConnected: {
+    backgroundColor: BrandColors.primary + "10",
+    borderWidth: 2,
+    borderColor: BrandColors.primary,
+  },
+  itemPrimaryButtonConnected: {
+    backgroundColor: BrandColors.primary + "30",
+  },
+  connectedBadge: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.primary,
+    fontWeight: "600",
+    marginTop: Spacing.xs,
+  },
+  modalSection: {
+    marginBottom: Spacing.lg,
+  },
+  modalSectionTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
 });

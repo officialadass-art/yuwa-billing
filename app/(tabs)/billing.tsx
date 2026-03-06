@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
@@ -11,18 +11,19 @@ import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BLEPrinter } from "react-native-thermal-receipt-printer-image-qr";
 
 // const categories = ["All", "Coffee", "Snacks", "Food"];
 
@@ -86,7 +87,7 @@ export default function BillingScreen() {
         onSuccess: (data) => {
           Alert.alert(
             "Bill Saved",
-            `Bill of ₹${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
+            `Bill of Rs.${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
             [{ text: "OK", onPress: () => clearBill() }],
           );
           setShowBillModal(false);
@@ -104,12 +105,75 @@ export default function BillingScreen() {
     }
   };
 
-  const handlePrintBill = () => {
+  const handlePrintBill = async () => {
     if (billItems.length === 0) {
       Alert.alert("Empty Bill", "Please add items to print a bill");
       return;
     }
-    Alert.alert("Print Bill", "Bill sent to printer successfully!");
+
+    try {
+      Alert.alert("Printing", "Preparing bill for printing...");
+
+      // Build a simple and clean bill format
+      let billText = "";
+
+      // Cafe Name and Address
+      billText += "<C><B>" + (currentBusiness?.name || "CAFE") + "</B></C>\n";
+      const address = currentBusiness?.address;
+      const fullAddress = address
+        ? `${address.line1 || ""} ${address.line2 || ""}\n${address.city || ""}, ${address.state || ""} ${address.postalCode || ""}`
+        : "";
+      if (fullAddress.trim()) {
+        billText += `<C>${fullAddress.trim()}</C>\n`;
+      }
+      if (currentBusiness?.leagalInfo?.gstNumber) {
+        billText += `<C>GST: ${currentBusiness.leagalInfo.gstNumber}</C>\n`;
+      }
+      billText += "\n" + "=".repeat(32) + "\n\n";
+
+      // Items
+      billItems.forEach((item) => {
+        const itemName = item.menuItem.name.substring(0, 20);
+        const qty = item.quantity;
+        const price = item.subtotal.toFixed(2);
+        const line =
+          `${itemName} x${qty}`.padEnd(20) + `Rs.${price}`.padStart(10);
+        billText += line + "\n";
+      });
+
+      billText += "\n" + "-".repeat(32) + "\n";
+
+      // Totals
+      const subtotalLine =
+        "Subtotal".padEnd(20) + `Rs.${subtotal.toFixed(2)}`.padStart(10);
+      const taxLine =
+        "Tax (5%)".padEnd(20) + `Rs.${tax.toFixed(2)}`.padStart(10);
+      const totalLineText =
+        "Total".padEnd(20) + `Rs.${total.toFixed(2)}`.padStart(10);
+      // const totalLine = `<B>${totalLineText}</B>`;
+
+      billText += subtotalLine + "\n";
+      billText += taxLine + "\n";
+      billText += "=".repeat(32) + "\n";
+      billText += totalLineText + "\n";
+      billText += "=".repeat(32) + "\n\n";
+
+      // Thank You Message
+      billText += "<C>Thank You!</C>\n";
+      billText += "<C>Visit Again</C>\n\n\n";
+
+      // Print the bill
+      await BLEPrinter.printText(billText);
+
+      Alert.alert("Success", "Bill printed successfully!");
+    } catch (error) {
+      console.error("Print error:", error);
+      Alert.alert(
+        "Error",
+        "Failed to print bill. Make sure printer is connected.\n" +
+          String(error),
+      );
+    }
   };
 
   const renderMenuItem = ({ item }: { item: MenuItem }) => {
@@ -132,7 +196,7 @@ export default function BillingScreen() {
           <Text style={styles.menuItemName} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.menuItemPrice}>₹{item.price}</Text>
+          <Text style={styles.menuItemPrice}>Rs.{item.price}</Text>
         </View>
         {inBill && (
           <View style={styles.quantityBadge}>
@@ -226,9 +290,19 @@ export default function BillingScreen() {
         <View style={styles.billSummary}>
           <View style={styles.billInfo}>
             <Text style={styles.billItemCount}>{billItems.length} items</Text>
-            <Text style={styles.billTotal}>₹{total.toFixed(2)}</Text>
+            <Text style={styles.billTotal}>Rs.{total.toFixed(2)}</Text>
           </View>
           <View style={styles.billActions}>
+            <TouchableOpacity
+              style={styles.openSummaryButton}
+              onPress={() => setShowBillModal(true)}
+            >
+              <Ionicons
+                name="chevron-up"
+                size={24}
+                color={BrandColors.primary}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.saveButton}
               onPress={handleSaveBill}
@@ -294,7 +368,7 @@ export default function BillingScreen() {
                           {item.menuItem.name}
                         </Text>
                         <Text style={styles.billItemPrice}>
-                          ₹{item.menuItem.price} × {item.quantity}
+                          Rs.{item.menuItem.price} × {item.quantity}
                         </Text>
                       </View>
                       <View style={styles.quantityControls}>
@@ -327,7 +401,7 @@ export default function BillingScreen() {
                         </TouchableOpacity>
                       </View>
                       <Text style={styles.billItemSubtotal}>
-                        ₹{item.subtotal}
+                        Rs.{item.subtotal}
                       </Text>
                     </View>
                   ))}
@@ -337,17 +411,17 @@ export default function BillingScreen() {
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Subtotal</Text>
                     <Text style={styles.totalValue}>
-                      ₹{subtotal.toFixed(2)}
+                      Rs.{subtotal.toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Tax (5%)</Text>
-                    <Text style={styles.totalValue}>₹{tax.toFixed(2)}</Text>
+                    <Text style={styles.totalValue}>Rs.{tax.toFixed(2)}</Text>
                   </View>
                   <View style={[styles.totalRow, styles.grandTotalRow]}>
                     <Text style={styles.grandTotalLabel}>Total</Text>
                     <Text style={styles.grandTotalValue}>
-                      ₹{total.toFixed(2)}
+                      Rs.{total.toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -361,6 +435,18 @@ export default function BillingScreen() {
                     }}
                   >
                     <Text style={styles.clearButtonText}>Clear All</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.printButton}
+                    onPress={handlePrintBill}
+                  >
+                    <Ionicons
+                      name="print"
+                      size={18}
+                      color={BrandColors.white}
+                      style={{ marginRight: Spacing.sm }}
+                    />
+                    <Text style={styles.printButtonText}>Print Bill</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.confirmButton}
@@ -545,21 +631,23 @@ const styles = StyleSheet.create({
   billActions: {
     flexDirection: "row",
     gap: Spacing.sm,
+    alignItems: "center",
+  },
+  openSummaryButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.white,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BrandColors.primary,
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
     backgroundColor: BrandColors.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-  },
-  printButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    backgroundColor: BrandColors.accent,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
@@ -713,6 +801,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   confirmButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.white,
+  },
+  printButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.warning || "#FF9800",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  printButtonText: {
     fontSize: FontSizes.lg,
     fontWeight: "600",
     color: BrandColors.white,

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Leka Cafe",
-    "slug": "Leka Cafe",
+    "slug": "leka-cafe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -71,6 +71,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2f7457ed-7c20-4c4a-8bb4-a78bef5208b9"
+      }
     }
   }
 }
