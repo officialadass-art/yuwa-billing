@@ -73,6 +73,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="bills"
+        options={{
+          title: "All Bills",
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <Ionicons
+                name={focused ? "list" : "list-outline"}
+                size={24}
+                color={color}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="items"
         options={{
           title: "Items",

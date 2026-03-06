@@ -1,28 +1,30 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Linking,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  BLEPrinter,
-  IBLEPrinter,
+    BLEPrinter,
+    IBLEPrinter,
 } from "react-native-thermal-receipt-printer-image-qr";
 
 interface MenuItemProps {
@@ -81,6 +83,18 @@ export default function ProfileScreen() {
     null,
   );
   const [isDiscovering, setIsDiscovering] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editRole, setEditRole] = useState("Owner");
+  const [editMobile, setEditMobile] = useState(user?.mobile || "");
+  const [editGst, setEditGst] = useState(
+    currentBusiness?.leagalInfo?.gstNumber || "",
+  );
+  const [editCafeName, setEditCafeName] = useState(
+    currentBusiness?.name || "CafeBill",
+  );
+  const [editCafeAddress, setEditCafeAddress] = useState(
+    currentBusiness?.address?.line1 || "",
+  );
 
   useEffect(() => {
     if (showPrinterModal) {
@@ -230,7 +244,11 @@ export default function ProfileScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Business Card */}
-        <View style={styles.businessCard}>
+        <TouchableOpacity
+          style={styles.businessCard}
+          onPress={() => setShowEditProfileModal(true)}
+          activeOpacity={0.7}
+        >
           <View style={styles.businessLogo}>
             <Ionicons name="cafe" size={40} color={BrandColors.primary} />
           </View>
@@ -240,135 +258,91 @@ export default function ProfileScreen() {
             </Text>
             <Text style={styles.businessAddress}>{getCafeAddress()}</Text>
           </View>
-          <TouchableOpacity style={styles.editBusinessButton}>
+          <View style={styles.editBusinessButton}>
             <Ionicons name="pencil" size={18} color={BrandColors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* User Profile Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.sectionContent}>
-            <MenuItem
-              icon="person-outline"
-              label="My Profile"
-              subtitle={user?.name || "Cafe Owner"}
-              onPress={() =>
-                Alert.alert("Profile", "Edit profile feature coming soon")
-              }
-            />
-            <MenuItem
-              icon="call-outline"
-              label="Phone Number"
-              subtitle={user?.mobile ? `+91 ${user.mobile}` : "+91 XXXXXXXXXX"}
-              onPress={() =>
-                Alert.alert("Phone", "Change phone number feature coming soon")
-              }
-            />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Business Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Business</Text>
           <View style={styles.sectionContent}>
             <MenuItem
               icon="business-outline"
-              label="Organizations"
+              label="Businesses"
               subtitle="Manage your businesses"
               onPress={handleSwitchBusiness}
             />
             <MenuItem
-              icon="people-outline"
-              label="Access & Permissions"
-              subtitle="Manage staff access"
-              onPress={() =>
-                Alert.alert("Access", "Access management coming soon")
-              }
+              icon="grid-outline"
+              label="Categories"
+              subtitle="Manage your categories"
+              onPress={() => router.push("/categories")}
+            />
+            <MenuItem
+              icon="person-outline"
+              label="Role"
+              subtitle={editRole}
+              onPress={() => {}}
+              showArrow={false}
+            />
+            <MenuItem
+              icon="call-outline"
+              label="Mobile number"
+              subtitle={editMobile || "+91 XXXXXXXXXX"}
+              onPress={() => {}}
+              showArrow={false}
             />
             <MenuItem
               icon="document-text-outline"
-              label="GST Details"
-              subtitle={
-                currentBusiness?.leagalInfo?.gstNumber || "Not configured"
-              }
-              onPress={() =>
-                Alert.alert("GST", "GST configuration coming soon")
-              }
+              label="GST"
+              subtitle={editGst || "Not configured"}
+              onPress={() => setShowEditProfileModal(true)}
             />
-          </View>
-        </View>
-
-        {/* App Settings Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Settings</Text>
-          <View style={styles.sectionContent}>
             <MenuItem
               icon="print-outline"
-              label="Printer Setup"
+              label="Printer setup"
               subtitle="Configure receipt printer"
               onPress={() => setShowPrinterModal(true)}
             />
-            <MenuItem
-              icon="notifications-outline"
-              label="Notifications"
-              subtitle="Manage alerts"
-              onPress={() =>
-                Alert.alert(
-                  "Notifications",
-                  "Notification settings coming soon",
-                )
-              }
-            />
-            <MenuItem
-              icon="moon-outline"
-              label="Appearance"
-              subtitle="Light mode"
-              onPress={() =>
-                Alert.alert("Appearance", "Theme settings coming soon")
-              }
-            />
           </View>
         </View>
 
-        {/* Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
           <View style={styles.sectionContent}>
             <MenuItem
               icon="help-circle-outline"
-              label="Help & Support"
-              onPress={() => Alert.alert("Help", "Help center coming soon")}
-            />
-            <MenuItem
-              icon="chatbubble-outline"
-              label="Contact Us"
-              onPress={() =>
-                Alert.alert("Contact", "Contact options coming soon")
-              }
+              label="Help and support"
+              onPress={() => router.push("/help")}
             />
             <MenuItem
               icon="star-outline"
               label="Rate the App"
               onPress={() =>
-                Alert.alert("Rate", "Rate us on Play Store / App Store")
+                Linking.openURL("market://details?id=com.leka.billing").catch(
+                  () =>
+                    Linking.openURL(
+                      "https://play.google.com/store/apps/details?id=com.leka.billing",
+                    ),
+                )
               }
             />
             <MenuItem
               icon="information-circle-outline"
               label="About"
-              subtitle="Version 1.0.0"
-              onPress={() =>
-                Alert.alert(
-                  "About",
-                  "CafeBill v1.0.0\nSmart Billing for Smart Cafes",
-                )
-              }
+              onPress={() => router.push("/about")}
+            />
+            <MenuItem
+              icon="shield-checkmark-outline"
+              label="Privacy Policy"
+              onPress={() => router.push("/privacy-policy")}
+            />
+            <MenuItem
+              icon="document-text-outline"
+              label="Terms and conditions"
+              onPress={() => router.push("/terms-conditions")}
             />
           </View>
         </View>
 
-        {/* Logout */}
         <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionContent}>
             <MenuItem
@@ -381,12 +355,84 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Made with ❤️ for Cafes</Text>
           <Text style={styles.versionText}>CafeBill v1.0.0</Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showEditProfileModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditProfileModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setShowEditProfileModal(false)}>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={BrandColors.gray[600]}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Cafe Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editCafeName}
+                  onChangeText={setEditCafeName}
+                  placeholder="Enter cafe name"
+                  placeholderTextColor={BrandColors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Cafe Address</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editCafeAddress}
+                  onChangeText={setEditCafeAddress}
+                  placeholder="Enter address details"
+                  placeholderTextColor={BrandColors.gray[400]}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>GST Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editGst}
+                  onChangeText={setEditGst}
+                  placeholder="Enter GST number"
+                  autoCapitalize="characters"
+                  placeholderTextColor={BrandColors.gray[400]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalSecondaryButton}
+                onPress={() => setShowEditProfileModal(false)}
+              >
+                <Text style={styles.modalSecondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={() => setShowEditProfileModal(false)}
+              >
+                <Text style={styles.modalPrimaryButtonText}>Save Details</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showPrinterModal}
@@ -786,5 +832,23 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[900],
     marginBottom: Spacing.md,
     paddingHorizontal: Spacing.lg,
+  },
+  inputGroup: {
+    marginBottom: Spacing.md,
+  },
+  inputLabel: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
+    color: BrandColors.gray[700],
+    marginBottom: Spacing.xs,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[900],
+    backgroundColor: BrandColors.gray[50],
   },
 });

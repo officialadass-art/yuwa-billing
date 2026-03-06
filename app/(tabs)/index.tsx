@@ -1,8 +1,8 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,57 +10,55 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Mock data for dashboard
-const todayStats = {
-  totalSales: 15680,
-  totalOrders: 42,
-  avgOrderValue: 373,
-  topItem: "Cappuccino",
-};
-
-const recentOrders = [
-  { id: "1", items: 3, total: 520, time: "2 min ago", status: "completed" },
-  { id: "2", items: 2, total: 340, time: "15 min ago", status: "completed" },
-  { id: "3", items: 5, total: 890, time: "32 min ago", status: "completed" },
-  { id: "4", items: 1, total: 180, time: "1 hr ago", status: "completed" },
-];
-
 export default function DashboardScreen() {
-  const { currentBusiness, getToken, isAuthenticated } = useAuth();
-  const {
-    data: dashboardData,
-    isLoading,
-    error,
-  } = useApiDashboard({
+  const { currentBusiness, isAuthenticated } = useAuth();
+  const { data: dashboardData } = useApiDashboard({
     tenantId: currentBusiness?.id,
-    enabled: (!!currentBusiness?.id && isAuthenticated)
+    enabled: !!currentBusiness?.id && isAuthenticated,
   });
 
   const defaultData = {
-    todaysSalesAmount: 0,
-    totalOrdersCount: 0,
-    totalSalesAmount: 0,
-    todaysOrdersCount: 0,
-    averageOrderAmount: 0,
+    totalSalesAmount: 15680,
+    todaysOrdersCount: 42,
+    averageOrderAmount: 373,
     topSellerItem: {
-      productId: "prod-123",
       productName: "Cappuccino",
-      quantitySold: 150,
-      totalSales: 750,
     },
-    todaysOrderData: [],
+    todaysOrderData: [
+      {
+        id: "1",
+        items: [{ name: "item" }],
+        totalAmount: 520,
+        createdAt: "2 min ago",
+      },
+      {
+        id: "2",
+        items: [{ name: "item" }],
+        totalAmount: 340,
+        createdAt: "15 min ago",
+      },
+    ],
   };
 
   const data = dashboardData || defaultData;
+
+  // Simple Mock Custom Chart Bars data
+  const customBarData = [
+    { label: "Coffee", value: 65, color: BrandColors.primary },
+    { label: "Tea", value: 40, color: BrandColors.accent },
+    { label: "Snacks", value: 80, color: BrandColors.warning || "#F59E0B" },
+    { label: "Meals", value: 30, color: BrandColors.danger },
+  ];
+  const maxBarValue = Math.max(...customBarData.map((d) => d.value));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,7 +74,7 @@ export default function DashboardScreen() {
             <Text style={styles.businessName}>
               {currentBusiness?.name || "CafeBill"}
             </Text>
-            <Text style={styles.dateText}>Today, Feb 14, 2026</Text>
+            <Text style={styles.dateText}>Welcome back, Admin</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Ionicons
@@ -90,65 +88,6 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statsCard, styles.primaryCard]}>
-            <View style={styles.statsIconContainer}>
-              <Ionicons
-                name="cash-outline"
-                size={24}
-                color={BrandColors.white}
-              />
-            </View>
-            <Text style={styles.statsValue}>
-              ₹{data.totalSalesAmount.toLocaleString()}
-            </Text>
-            <Text style={styles.statsLabel}>Today's Sales</Text>
-          </View>
-
-          <View style={styles.statsCard}>
-            <View style={[styles.statsIconContainer, styles.accentIcon]}>
-              <Ionicons
-                name="receipt-outline"
-                size={24}
-                color={BrandColors.accent}
-              />
-            </View>
-            <Text style={styles.statsValueDark}>{data.todaysOrdersCount}</Text>
-            <Text style={styles.statsLabelDark}>Orders</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statsCard}>
-            <View style={[styles.statsIconContainer, styles.successIcon]}>
-              <Ionicons
-                name="trending-up-outline"
-                size={24}
-                color={BrandColors.success}
-              />
-            </View>
-            <Text style={styles.statsValueDark}>
-              ₹{data.averageOrderAmount.toLocaleString()}
-            </Text>
-            <Text style={styles.statsLabelDark}>Avg. Order</Text>
-          </View>
-
-          <View style={styles.statsCard}>
-            <View style={[styles.statsIconContainer, styles.infoIcon]}>
-              <Ionicons
-                name="star-outline"
-                size={24}
-                color={BrandColors.info}
-              />
-            </View>
-            <Text style={styles.statsValueDark}>
-              {data.topSellerItem.productName}
-            </Text>
-            <Text style={styles.statsLabelDark}>Top Seller</Text>
-          </View>
-        </View>
-
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -172,7 +111,10 @@ export default function DashboardScreen() {
               <Text style={styles.actionText}>New Bill</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.navigate("/bills")}
+            >
               <View
                 style={[
                   styles.actionIcon,
@@ -185,10 +127,13 @@ export default function DashboardScreen() {
                   color={BrandColors.accent}
                 />
               </View>
-              <Text style={styles.actionText}>View Bills</Text>
+              <Text style={styles.actionText}>All Bills</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.navigate("/reports")}
+            >
               <View
                 style={[
                   styles.actionIcon,
@@ -204,7 +149,10 @@ export default function DashboardScreen() {
               <Text style={styles.actionText}>Reports</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.navigate("/categories")}
+            >
               <View
                 style={[
                   styles.actionIcon,
@@ -212,13 +160,76 @@ export default function DashboardScreen() {
                 ]}
               >
                 <Ionicons
-                  name="settings-outline"
+                  name="grid-outline"
                   size={28}
                   color={BrandColors.info}
                 />
               </View>
-              <Text style={styles.actionText}>Settings</Text>
+              <Text style={styles.actionText}>Categories</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Stats Cards */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Overview Snapshot</Text>
+          <View style={styles.statsContainer}>
+            <View style={[styles.statsCard, styles.primaryCard]}>
+              <View style={styles.statsIconContainer}>
+                <Ionicons
+                  name="cash-outline"
+                  size={24}
+                  color={BrandColors.white}
+                />
+              </View>
+              <Text style={styles.statsValue}>
+                ₹{data.totalSalesAmount.toLocaleString()}
+              </Text>
+              <Text style={styles.statsLabel}>Today's Revenue</Text>
+            </View>
+
+            <View style={styles.statsCard}>
+              <View style={[styles.statsIconContainer, styles.accentIcon]}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={24}
+                  color={BrandColors.accent}
+                />
+              </View>
+              <Text style={styles.statsValueDark}>
+                {data.todaysOrdersCount}
+              </Text>
+              <Text style={styles.statsLabelDark}>Orders Today</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Custom JS Bar Chart Area */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Category Sales</Text>
+          <View style={styles.chartContainer}>
+            <View style={styles.customBarsWrapper}>
+              {customBarData.map((bar, index) => {
+                const heightPercentage = (bar.value / maxBarValue) * 100;
+                return (
+                  <View key={index} style={styles.customBarColumn}>
+                    <Text style={styles.customBarValue}>{bar.value}</Text>
+                    <View style={styles.customBarTrack}>
+                      <View
+                        style={[
+                          styles.customBarFill,
+                          {
+                            height: `${heightPercentage}%`,
+                            backgroundColor: bar.color,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.customBarLabel}>{bar.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -226,7 +237,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.navigate("/bills")}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -243,7 +254,7 @@ export default function DashboardScreen() {
               <View style={styles.orderInfo}>
                 <Text style={styles.orderTitle}>Order #{order.id}</Text>
                 <Text style={styles.orderMeta}>
-                  {order.items.length} items • {order.createdAt}
+                  {order.items?.length || 1} items • {order.createdAt}
                 </Text>
               </View>
               <View style={styles.orderAmount}>
@@ -260,7 +271,7 @@ export default function DashboardScreen() {
           ))}
         </View>
 
-        <View style={{ height: Spacing.xxl }} />
+        <View style={{ height: Spacing.xxl * 2 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -330,9 +341,9 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     shadowColor: BrandColors.black,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
   primaryCard: {
     backgroundColor: BrandColors.primary,
@@ -349,19 +360,13 @@ const styles = StyleSheet.create({
   accentIcon: {
     backgroundColor: BrandColors.accent + "15",
   },
-  successIcon: {
-    backgroundColor: BrandColors.success + "15",
-  },
-  infoIcon: {
-    backgroundColor: BrandColors.info + "15",
-  },
   statsValue: {
     fontSize: FontSizes.xxl,
     fontWeight: "700",
     color: BrandColors.white,
   },
   statsValueDark: {
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.xxl,
     fontWeight: "700",
     color: BrandColors.gray[900],
   },
@@ -398,7 +403,7 @@ const styles = StyleSheet.create({
   actionsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.md,
+    justifyContent: "space-between",
   },
   actionButton: {
     width: "22%",
@@ -417,6 +422,18 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[700],
     textAlign: "center",
   },
+  chartContainer: {
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   orderCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -424,6 +441,11 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.sm,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   orderIcon: {
     width: 44,
@@ -457,5 +479,44 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     marginTop: Spacing.xs,
+  },
+  customBarsWrapper: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "flex-end",
+    height: 180,
+    width: "100%",
+    paddingTop: Spacing.md,
+  },
+  customBarColumn: {
+    alignItems: "center",
+    width: 40,
+    height: "100%",
+    justifyContent: "flex-end",
+  },
+  customBarValue: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[600],
+    marginBottom: Spacing.xs,
+    fontWeight: "600",
+  },
+  customBarTrack: {
+    width: 24,
+    height: 120,
+    backgroundColor: BrandColors.gray[100],
+    borderRadius: BorderRadius.sm,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  customBarFill: {
+    width: "100%",
+    borderTopLeftRadius: BorderRadius.sm,
+    borderTopRightRadius: BorderRadius.sm,
+  },
+  customBarLabel: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[700],
+    marginTop: Spacing.xs,
+    textAlign: "center",
   },
 });
