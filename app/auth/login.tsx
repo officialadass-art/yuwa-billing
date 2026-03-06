@@ -1,26 +1,27 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useApiSendOTP } from "@/hooks/use-api-auth";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState("");
@@ -28,10 +29,11 @@ export default function LoginScreen() {
 
   const handleSendOTP = async () => {
     if (mobileNumber.length !== 10) {
-      Alert.alert(
-        "Invalid Number",
-        "Please enter a valid 10-digit mobile number",
-      );
+      Toast.show({
+        type: "error",
+        text1: "Invalid Number",
+        text2: "Please enter a valid 10-digit mobile number",
+      });
       return;
     }
     // Making POST request to send OTP
@@ -43,7 +45,11 @@ export default function LoginScreen() {
         });
       },
       onError: (error) => {
-        Alert.alert("Error", error.message || "Failed to send OTP");
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: error.message || "Failed to send OTP",
+        });
       },
     });
   };
@@ -113,7 +119,7 @@ export default function LoginScreen() {
           activeOpacity={0.8}
         >
           {isPending ? (
-            <Text style={styles.continueButtonText}>Sending OTP...</Text>
+            <ActivityIndicator color={BrandColors.white} size="small" />
           ) : (
             <>
               <Text style={styles.continueButtonText}>Send OTP</Text>

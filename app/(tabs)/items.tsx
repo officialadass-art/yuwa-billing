@@ -15,6 +15,7 @@ import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     FlatList,
     Image,
@@ -28,6 +29,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 // const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
@@ -89,15 +91,27 @@ export default function ItemsScreen() {
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      Alert.alert("Validation Error", "Please enter item name");
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please enter item name",
+      });
       return false;
     }
     if (!formData.price.trim()) {
-      Alert.alert("Validation Error", "Please enter price");
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please enter price",
+      });
       return false;
     }
     if (isNaN(parseFloat(formData.price))) {
-      Alert.alert("Validation Error", "Price must be a valid number");
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Price must be a valid number",
+      });
       return false;
     }
     return true;
@@ -125,11 +139,19 @@ export default function ItemsScreen() {
         },
         {
           onSuccess: () => {
-            Alert.alert("Success", "Item updated successfully");
+            Toast.show({
+              type: "success",
+              text1: "Success",
+              text2: "Item updated successfully",
+            });
             setShowModal(false);
           },
           onError: (error) => {
-            Alert.alert("Error", error.message || "Failed to update item");
+            Toast.show({
+              type: "error",
+              text1: "Error",
+              text2: error.message || "Failed to update item",
+            });
           },
         },
       );
@@ -142,11 +164,19 @@ export default function ItemsScreen() {
         },
         {
           onSuccess: () => {
-            Alert.alert("Success", "Item added successfully");
+            Toast.show({
+              type: "success",
+              text1: "Success",
+              text2: "Item added successfully",
+            });
             setShowModal(false);
           },
           onError: (error) => {
-            Alert.alert("Error", error.message || "Failed to add item");
+            Toast.show({
+              type: "error",
+              text1: "Error",
+              text2: error.message || "Failed to add item",
+            });
           },
         },
       );
@@ -203,13 +233,18 @@ export default function ItemsScreen() {
               },
               {
                 onSuccess: () => {
-                  Alert.alert("Success", "Item deleted successfully");
+                  Toast.show({
+                    type: "success",
+                    text1: "Success",
+                    text2: "Item deleted successfully",
+                  });
                 },
                 onError: (error) => {
-                  Alert.alert(
-                    "Error",
-                    error.message || "Failed to delete item",
-                  );
+                  Toast.show({
+                    type: "error",
+                    text1: "Error",
+                    text2: error.message || "Failed to delete item",
+                  });
                 },
               },
             );
@@ -238,13 +273,14 @@ export default function ItemsScreen() {
           style={styles.editButton}
           onPress={() => openEditModal(item)}
         >
-          <Ionicons name="pencil" size={18} color={BrandColors.primary} />
+          <Ionicons name="pencil" size={16} color={BrandColors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDelete(item)}
+          disabled={isDeletingProduct}
         >
-          <Ionicons name="trash" size={18} color={BrandColors.danger} />
+          <Ionicons name="trash" size={16} color={BrandColors.danger} />
         </TouchableOpacity>
       </View>
     </View>
@@ -458,10 +494,15 @@ export default function ItemsScreen() {
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleSaveItem}
+                disabled={isCreatingProduct || isUpdatingProduct}
               >
-                <Text style={styles.saveButtonText}>
-                  {editingItem ? "Update" : "Add Item"}
-                </Text>
+                {isCreatingProduct || isUpdatingProduct ? (
+                  <ActivityIndicator color={BrandColors.white} size="small" />
+                ) : (
+                  <Text style={styles.saveButtonText}>
+                    {editingItem ? "Update" : "Add Item"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -677,7 +718,7 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.gray[100],
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     fontSize: FontSizes.md,
     color: BrandColors.gray[900],
   },
@@ -715,26 +756,26 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.lg,
     borderWidth: 2,
     borderColor: BrandColors.gray[300],
     alignItems: "center",
   },
   cancelButtonText: {
-    fontSize: FontSizes.lg,
+    fontSize: FontSizes.md,
     fontWeight: "600",
     color: BrandColors.gray[700],
   },
   saveButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.lg,
     backgroundColor: BrandColors.primary,
     alignItems: "center",
   },
   saveButtonText: {
-    fontSize: FontSizes.lg,
+    fontSize: FontSizes.md,
     fontWeight: "600",
     color: BrandColors.white,
   },

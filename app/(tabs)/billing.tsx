@@ -1,8 +1,8 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
@@ -11,19 +11,20 @@ import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BLEPrinter } from "react-native-thermal-receipt-printer-image-qr";
+import Toast from "react-native-toast-message";
 
 // const categories = ["All", "Coffee", "Snacks", "Food"];
 
@@ -56,7 +57,11 @@ export default function BillingScreen() {
 
   const handleSaveBill = async () => {
     if (billItems.length === 0) {
-      Alert.alert("Empty Bill", "Please add items to create a bill");
+      Toast.show({
+        type: "error",
+        text1: "Empty Bill",
+        text2: "Please add items to create a bill",
+      });
       return;
     }
     try {
@@ -85,34 +90,49 @@ export default function BillingScreen() {
 
       createInvoice(payload, {
         onSuccess: (data) => {
-          Alert.alert(
-            "Bill Saved",
-            `Bill of Rs.${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
-            [{ text: "OK", onPress: () => clearBill() }],
-          );
+          Toast.show({
+            type: "success",
+            text1: "Bill Saved",
+            text2: `Bill of Rs.${data.data.totalAmount.toFixed(2)} has been saved successfully!`,
+          });
+          clearBill();
           setShowBillModal(false);
         },
         onError: (error) => {
-          Alert.alert(
-            "Error",
-            error.message || "Failed to save the bill. Please try again.",
-          );
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2:
+              error.message || "Failed to save the bill. Please try again.",
+          });
         },
       });
     } catch (error) {
       console.error("Error saving bill:", error);
-      Alert.alert("Error", "Failed to save the bill. Please try again.");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to save the bill. Please try again.",
+      });
     }
   };
 
   const handlePrintBill = async () => {
     if (billItems.length === 0) {
-      Alert.alert("Empty Bill", "Please add items to print a bill");
+      Toast.show({
+        type: "error",
+        text1: "Empty Bill",
+        text2: "Please add items to print a bill",
+      });
       return;
     }
 
     try {
-      Alert.alert("Printing", "Preparing bill for printing...");
+      Toast.show({
+        type: "info",
+        text1: "Printing",
+        text2: "Preparing bill for printing...",
+      });
 
       // Build a simple and clean bill format
       let billText = "";
@@ -165,14 +185,18 @@ export default function BillingScreen() {
       // Print the bill
       await BLEPrinter.printText(billText);
 
-      Alert.alert("Success", "Bill printed successfully!");
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Bill printed successfully!",
+      });
     } catch (error) {
       console.error("Print error:", error);
-      Alert.alert(
-        "Error",
-        "Failed to print bill. Make sure printer is connected.\n" +
-          String(error),
-      );
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to print bill. Make sure printer is connected.",
+      });
     }
   };
 
@@ -306,13 +330,18 @@ export default function BillingScreen() {
             <TouchableOpacity
               style={styles.saveButton}
               onPress={handleSaveBill}
+              disabled={isCreatingInvoice}
               accessibilityLabel="Save Bill"
             >
-              <Ionicons
-                name="save-outline"
-                size={24}
-                color={BrandColors.white}
-              />
+              {isCreatingInvoice ? (
+                <ActivityIndicator color={BrandColors.white} size="small" />
+              ) : (
+                <Ionicons
+                  name="save-outline"
+                  size={20}
+                  color={BrandColors.white}
+                />
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.printButton}
@@ -321,7 +350,7 @@ export default function BillingScreen() {
             >
               <Ionicons
                 name="print-outline"
-                size={24}
+                size={20}
                 color={BrandColors.white}
               />
             </TouchableOpacity>
@@ -434,28 +463,37 @@ export default function BillingScreen() {
                       setShowBillModal(false);
                     }}
                   >
-                    <Text style={styles.clearButtonText}>Clear All</Text>
+                    <Text style={styles.clearButtonText}>Clear</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.printButton}
+                    style={styles.printModalButton}
                     onPress={handlePrintBill}
                   >
                     <Ionicons
-                      name="print"
+                      name="print-outline"
                       size={18}
-                      color={BrandColors.white}
-                      style={{ marginRight: Spacing.sm }}
+                      color={BrandColors.gray[800]}
                     />
-                    <Text style={styles.printButtonText}>Print Bill</Text>
+                    <Text style={styles.printModalButtonText}>Print</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.confirmButton}
                     onPress={() => {
-                      handleSaveBill();
-                      setShowBillModal(false);
+                      if (!isCreatingInvoice) {
+                        handleSaveBill();
+                        // Note: modal closing relies on the success callback now
+                      }
                     }}
+                    disabled={isCreatingInvoice}
                   >
-                    <Text style={styles.confirmButtonText}>Save Bill</Text>
+                    {isCreatingInvoice ? (
+                      <ActivityIndicator
+                        color={BrandColors.white}
+                        size="small"
+                      />
+                    ) : (
+                      <Text style={styles.confirmButtonText}>Save Bill</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </>
@@ -604,7 +642,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: BrandColors.white,
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -620,22 +659,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   billItemCount: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: BrandColors.gray[600],
   },
   billTotal: {
-    fontSize: FontSizes.xxl,
+    fontSize: FontSizes.lg,
     fontWeight: "700",
     color: BrandColors.gray[900],
   },
   billActions: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     alignItems: "center",
   },
   openSummaryButton: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.white,
     alignItems: "center",
@@ -646,24 +685,23 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: BrandColors.danger,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: Spacing.sm,
-    width: 48,
-    height: 48,
+    width: 38,
+    height: 38,
   },
   printButton: {
     backgroundColor: BrandColors.primary,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: Spacing.sm,
-    width: 48,
-    height: 48,
+    width: 38,
+    height: 38,
+  },
+  printButtonText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.white,
+    fontWeight: "600",
   },
   buttonText: {
     fontSize: FontSizes.md,
@@ -790,32 +828,55 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     flexDirection: "row",
-    padding: Spacing.lg,
-    gap: Spacing.md,
+    padding: Spacing.md,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.sm,
+    justifyContent: "space-between",
   },
   clearButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.danger + "20",
+    borderWidth: 1,
     borderColor: BrandColors.danger,
     alignItems: "center",
+    justifyContent: "center",
   },
   clearButtonText: {
-    fontSize: FontSizes.lg,
+    fontSize: FontSizes.md,
     fontWeight: "600",
     color: BrandColors.danger,
   },
-  confirmButton: {
+  printModalButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[100],
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+  },
+  printModalButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[800],
+  },
+  confirmButton: {
+    flex: 1.5,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.primary,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
   },
   confirmButtonText: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
+    fontSize: FontSizes.md,
+    fontWeight: "700",
     color: BrandColors.white,
   },
 });

@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     StatusBar,
@@ -18,9 +18,10 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function OTPScreen() {
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
@@ -69,7 +70,11 @@ export default function OTPScreen() {
   const handleVerify = async () => {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) {
-      Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP");
+      Toast.show({
+        type: "error",
+        text1: "Invalid OTP",
+        text2: "Please enter the complete 6-digit OTP",
+      });
       return;
     }
     mutate(
@@ -89,7 +94,11 @@ export default function OTPScreen() {
         },
 
         onError: (error) => {
-          Alert.alert("Error", error.message || "Failed to verify OTP");
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: error.message || "Failed to verify OTP",
+          });
           return;
         },
       },
@@ -98,7 +107,11 @@ export default function OTPScreen() {
 
   const handleResendOTP = () => {
     setResendTimer(30);
-    Alert.alert("OTP Resent", "A new OTP has been sent to your mobile number");
+    Toast.show({
+      type: "success",
+      text1: "OTP Resent",
+      text2: "A new OTP has been sent to your mobile number",
+    });
   };
 
   const otpComplete = otp.every((digit) => digit !== "");
@@ -178,7 +191,7 @@ export default function OTPScreen() {
           activeOpacity={0.8}
         >
           {isPending ? (
-            <Text style={styles.verifyButtonText}>Verifying...</Text>
+            <ActivityIndicator color={BrandColors.white} size="small" />
           ) : (
             <>
               <Text style={styles.verifyButtonText}>Verify & Continue</Text>

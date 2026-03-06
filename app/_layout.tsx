@@ -1,7 +1,7 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -12,8 +12,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { BillingProvider } from "@/context/BillingContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StyleSheet } from 'react-native';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { StyleSheet } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 const queryClient = new QueryClient();
 
@@ -48,32 +48,38 @@ export const unstable_settings = {
   initialRouteName: "auth",
 };
 
+import Toast from "react-native-toast-message";
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <BillingProvider>
-        <ThemeProvider
-          value={colorScheme === "dark" ? CafeDarkTheme : CafeTheme}
-        >
-          <SafeAreaProvider>
-          <SafeAreaView style={styles.container}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-          </SafeAreaView>
-          </SafeAreaProvider>
-        </ThemeProvider>
-      </BillingProvider>
-    </AuthProvider>
+      <AuthProvider>
+        <BillingProvider>
+          <ThemeProvider
+            value={colorScheme === "dark" ? CafeDarkTheme : CafeTheme}
+          >
+            <SafeAreaProvider>
+              <SafeAreaView style={styles.container}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="auth" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: "modal", title: "Modal" }}
+                  />
+                </Stack>
+                <StatusBar style="auto" />
+              </SafeAreaView>
+            </SafeAreaProvider>
+            <Toast />
+          </ThemeProvider>
+        </BillingProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
@@ -81,6 +87,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1, // Ensures the view fills the entire safe area
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
 });

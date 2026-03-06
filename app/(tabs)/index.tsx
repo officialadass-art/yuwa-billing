@@ -10,18 +10,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
+    ActivityIndicator,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DashboardScreen() {
   const { currentBusiness, isAuthenticated } = useAuth();
-  const { data: dashboardData } = useApiDashboard({
+  const { data: dashboardData, isLoading } = useApiDashboard({
     tenantId: currentBusiness?.id,
     enabled: !!currentBusiness?.id && isAuthenticated,
   });
@@ -59,6 +60,27 @@ export default function DashboardScreen() {
     { label: "Meals", value: 30, color: BrandColors.danger },
   ];
   const maxBarValue = Math.max(...customBarData.map((d) => d.value));
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { padding: Spacing.lg }]}>
+        <View style={styles.skeletonHeader} />
+        <View style={styles.skeletonStatsContainer}>
+          <View style={styles.skeletonCard} />
+          <View style={styles.skeletonCard} />
+        </View>
+        <View style={styles.skeletonChartPlaceholder} />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={BrandColors.primary} />
+          <Text style={{ marginTop: 10, color: BrandColors.gray[500] }}>
+            Loading Dashboard...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -518,5 +540,30 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[700],
     marginTop: Spacing.xs,
     textAlign: "center",
+  },
+  skeletonHeader: {
+    width: "100%",
+    height: 80,
+    backgroundColor: BrandColors.gray[200],
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xl,
+  },
+  skeletonStatsContainer: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+  skeletonCard: {
+    flex: 1,
+    height: 100,
+    backgroundColor: BrandColors.gray[200],
+    borderRadius: BorderRadius.lg,
+  },
+  skeletonChartPlaceholder: {
+    width: "100%",
+    height: 250,
+    backgroundColor: BrandColors.gray[200],
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xl,
   },
 });
