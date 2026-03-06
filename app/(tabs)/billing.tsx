@@ -306,24 +306,24 @@ export default function BillingScreen() {
             <TouchableOpacity
               style={styles.saveButton}
               onPress={handleSaveBill}
+              accessibilityLabel="Save Bill"
             >
               <Ionicons
                 name="save-outline"
-                size={20}
+                size={24}
                 color={BrandColors.white}
               />
-              <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.printButton}
               onPress={handlePrintBill}
+              accessibilityLabel="Print Bill"
             >
               <Ionicons
                 name="print-outline"
-                size={20}
+                size={24}
                 color={BrandColors.white}
               />
-              <Text style={styles.buttonText}>Print</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -644,13 +644,26 @@ const styles = StyleSheet.create({
     borderColor: BrandColors.primary,
   },
   saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    backgroundColor: BrandColors.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    backgroundColor: BrandColors.danger,
     borderRadius: BorderRadius.md,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: Spacing.sm,
+    width: 48,
+    height: 48,
+  },
+  printButton: {
+    backgroundColor: BrandColors.primary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: Spacing.sm,
+    width: 48,
+    height: 48,
   },
   buttonText: {
     fontSize: FontSizes.md,
@@ -801,20 +814,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   confirmButtonText: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
-    color: BrandColors.white,
-  },
-  printButton: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: BrandColors.warning || "#FF9800",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  printButtonText: {
     fontSize: FontSizes.lg,
     fontWeight: "600",
     color: BrandColors.white,
