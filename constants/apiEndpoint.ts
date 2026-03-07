@@ -23,5 +23,6 @@ export const APIEndpoints = {
     create: "/tenants/:tenantId/invoices",
     list: "/tenants/:tenantId/invoices",
     details: "/tenants/:tenantId/invoices/:invoiceId",
+    filter: "/tenants/:tenantId/invoices/filter",
   }
 }

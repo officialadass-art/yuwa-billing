@@ -4,9 +4,12 @@ import {
     FontSizes,
     Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { InvoiceFilterType, useApiInvoices } from "@/hooks/use-api-invoices";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
     Modal,
     ScrollView,
     StyleSheet,
@@ -29,51 +32,101 @@ const DATE_FILTERS = [
   "Custom",
 ];
 
-const mockBills = [
-  {
-    id: "101",
-    total: 1200,
-    items: 3,
-    date: "2026-02-14 10:30 AM",
-    status: "Paid",
-  },
-  {
-    id: "102",
-    total: 450,
-    items: 1,
-    date: "2026-02-14 11:15 AM",
-    status: "Paid",
-  },
-  {
-    id: "103",
-    total: 890,
-    items: 4,
-    date: "2026-02-14 12:45 PM",
-    status: "Paid",
-  },
-  {
-    id: "104",
-    total: 230,
-    items: 2,
-    date: "2026-02-14 02:10 PM",
-    status: "Paid",
-  },
-];
+const FILTER_TYPE_MAP: Record<string, InvoiceFilterType> = {
+  Today: "today",
+  Yesterday: "yesterday",
+  "This week": "thisWeek",
+  "Last week": "lastWeek",
+  "This month": "thisMonth",
+  "Last Month": "lastMonth",
+  "This year": "thisYear",
+  "Last Year": "lastYear",
+  Custom: "custom",
+};
+
+const isValidDateFormat = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+
+const formatBillDate = (dateValue?: string) => {
+  if (!dateValue) {
+    return "-";
+  }
+
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return dateValue;
+  }
+
+  return parsedDate.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 export default function AllBillsScreen() {
+  const { currentBusiness, isAuthenticated } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState("Today");
+  const [appliedFilter, setAppliedFilter] = useState("Today");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [appliedFromDate, setAppliedFromDate] = useState("");
+  const [appliedToDate, setAppliedToDate] = useState("");
+  const [fromDateError, setFromDateError] = useState("");
+  const [toDateError, setToDateError] = useState("");
+
+  const selectedFilterType = FILTER_TYPE_MAP[appliedFilter] || "today";
+  const {
+    data: bills = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useApiInvoices({
+    tenantId: currentBusiness?.id,
+    filters: {
+      filterType: selectedFilterType,
+      startDate: selectedFilterType === "custom" ? appliedFromDate : undefined,
+      endDate: selectedFilterType === "custom" ? appliedToDate : undefined,
+    },
+    enabled: !!currentBusiness?.id && isAuthenticated,
+  });
 
   const handleFilterSelect = (filter: string) => {
     setSelectedFilter(filter);
     if (filter !== "Custom") {
+      setAppliedFilter(filter);
       setShowFilterModal(false);
+      setFromDateError("");
+      setToDateError("");
     }
   };
 
   const applyCustomFilter = () => {
+    let hasError = false;
+
+    if (!isValidDateFormat(fromDate)) {
+      setFromDateError("Invalid date format. Use YYYY-MM-DD");
+      hasError = true;
+    } else {
+      setFromDateError("");
+    }
+
+    if (!isValidDateFormat(toDate)) {
+      setToDateError("Invalid date format. Use YYYY-MM-DD");
+      hasError = true;
+    } else {
+      setToDateError("");
+    }
+
+    if (hasError) {
+      return;
+    }
+
+    setAppliedFromDate(fromDate);
+    setAppliedToDate(toDate);
+    setAppliedFilter("Custom");
     setShowFilterModal(false);
   };
 
@@ -83,34 +136,57 @@ export default function AllBillsScreen() {
         <Text style={styles.headerTitle}>All Bills</Text>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
+          onPress={() => {
+            setSelectedFilter(appliedFilter);
+            setShowFilterModal(true);
+          }}
         >
           <Ionicons name="filter" size={20} color={BrandColors.primary} />
-          <Text style={styles.filterText}>{selectedFilter}</Text>
+          <Text style={styles.filterText}>{appliedFilter}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.listContainer}>
-        {mockBills.map((bill) => (
-          <View key={bill.id} style={styles.billCard}>
-            <View style={styles.billIcon}>
-              <Ionicons
-                name="document-text"
-                size={24}
-                color={BrandColors.primary}
-              />
-            </View>
-            <View style={styles.billInfo}>
-              <Text style={styles.billTitle}>Bill #{bill.id}</Text>
-              <Text style={styles.billDate}>{bill.date}</Text>
-              <Text style={styles.billItems}>{bill.items} items</Text>
-            </View>
-            <View style={styles.billAmountContainer}>
-              <Text style={styles.billAmount}>₹{bill.total}</Text>
-              <Text style={styles.billStatus}>{bill.status}</Text>
-            </View>
+        {isLoading ? (
+          <View style={styles.stateContainer}>
+            <ActivityIndicator size="large" color={BrandColors.primary} />
+            <Text style={styles.stateText}>Loading bills...</Text>
           </View>
-        ))}
+        ) : isError ? (
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateText}>Failed to load bills</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : bills.length === 0 ? (
+          <View style={styles.stateContainer}>
+            <Text style={styles.stateText}>No bills found</Text>
+          </View>
+        ) : (
+          bills.map((bill, index) => (
+            <View key={bill.id || String(index)} style={styles.billCard}>
+              <View style={styles.billIcon}>
+                <Ionicons
+                  name="document-text"
+                  size={24}
+                  color={BrandColors.primary}
+                />
+              </View>
+              <View style={styles.billInfo}>
+                <Text style={styles.billTitle}>Bill #{bill.id || "-"}</Text>
+                <Text style={styles.billDate}>{formatBillDate(bill.createdAt)}</Text>
+                <Text style={styles.billItems}>{bill.items?.length || 0} items</Text>
+              </View>
+              <View style={styles.billAmountContainer}>
+                <Text style={styles.billAmount}>₹{(bill.totalAmount || 0).toLocaleString("en-IN")}</Text>
+                <Text style={styles.billStatus}>
+                  {bill.status ? `${bill.status.charAt(0).toUpperCase()}${bill.status.slice(1)}` : "-"}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <Modal visible={showFilterModal} transparent animationType="slide">
@@ -158,16 +234,32 @@ export default function AllBillsScreen() {
                   <TextInput
                     style={styles.input}
                     value={fromDate}
-                    onChangeText={setFromDate}
+                    onChangeText={(value) => {
+                      setFromDate(value);
+                      if (fromDateError) {
+                        setFromDateError("");
+                      }
+                    }}
                     placeholder="2026-01-01"
                   />
+                  {!!fromDateError && (
+                    <Text style={styles.inputErrorText}>{fromDateError}</Text>
+                  )}
                   <Text style={styles.inputLabel}>To Date (YYYY-MM-DD)</Text>
                   <TextInput
                     style={styles.input}
                     value={toDate}
-                    onChangeText={setToDate}
+                    onChangeText={(value) => {
+                      setToDate(value);
+                      if (toDateError) {
+                        setToDateError("");
+                      }
+                    }}
                     placeholder="2026-12-31"
                   />
+                  {!!toDateError && (
+                    <Text style={styles.inputErrorText}>{toDateError}</Text>
+                  )}
                   <TouchableOpacity
                     style={styles.applyButton}
                     onPress={applyCustomFilter}
@@ -220,6 +312,30 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: Spacing.lg,
+    flexGrow: 1,
+  },
+  stateContainer: {
+    flex: 1,
+    minHeight: 250,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  stateText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[600],
+    fontWeight: "500",
+  },
+  retryButton: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  retryButtonText: {
+    color: BrandColors.white,
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
   },
   billCard: {
     flexDirection: "row",
@@ -340,6 +456,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     fontSize: FontSizes.md,
+  },
+  inputErrorText: {
+    marginTop: 4,
+    fontSize: FontSizes.xs,
+    color: BrandColors.danger,
   },
   applyButton: {
     backgroundColor: BrandColors.primary,
