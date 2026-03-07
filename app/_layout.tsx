@@ -72,6 +72,7 @@ export default function RootLayout() {
                     name="modal"
                     options={{ presentation: "modal", title: "Modal" }}
                   />
+                  <Stack.Screen name="error" options={{ headerShown: false }} />
                 </Stack>
                 <StatusBar style="auto" />
               </SafeAreaView>

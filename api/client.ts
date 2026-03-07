@@ -6,11 +6,20 @@ import { router } from 'expo-router';
 
 const apiClient = axios.create({
   baseURL: APIEndpoints.baseURL,
-  timeout: 10000,
+  timeout: 30000, // 30 seconds timeout
 });
 
 const RETRY_KEY = 'auth_retry';
 const MAX_RETRY_ALLOWED = 5;
+
+const navigateToErrorPage = (buttonLabel: 'Try Again' | 'Retry') => {
+  router.replace({
+    pathname: '/error',
+    params: {
+      buttonLabel,
+    },
+  });
+};
 
 const HandleUnauthorize = async () => {
   const getAuthRetry = await SecureStoreGet(RETRY_KEY) || '0';
@@ -47,6 +56,17 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     console.log('API Response Failed', apiClient.getUri())
+    if (error.response?.status === 503) {
+      navigateToErrorPage('Try Again');
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 500) {
+      console.error('Internal Server Error:', error);
+      navigateToErrorPage('Retry');
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       // Logic for Logout or Token Refresh
       console.log('Unauthorized - redirecting to login...');
