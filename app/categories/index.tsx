@@ -4,10 +4,19 @@ import {
     FontSizes,
     Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import {
+  useApiCategories,
+  useCreateCategory,
+  useUpdateCategory,
+} from "@/hooks/use-api-category";
+import { Category } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
     Modal,
     ScrollView,
     StyleSheet,
@@ -18,33 +27,95 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Mock data
-const mockCategories = [
-  { id: "1", name: "Coffee", shortCode: "COF", emoji: "☕" },
-  { id: "2", name: "Tea", shortCode: "TEA", emoji: "🍵" },
-  { id: "3", name: "Snacks", shortCode: "SNK", emoji: "🥪" },
-];
-
 export default function CategoriesScreen() {
-  const [categories, setCategories] = useState(mockCategories);
+  const { currentBusiness } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatCode, setNewCatCode] = useState("");
-  const [newCatEmoji, setNewCatEmoji] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
 
-  const handleAddCategory = () => {
-    if (!newCatName) return;
-    const newCategory = {
-      id: Date.now().toString(),
-      name: newCatName,
-      shortCode: newCatCode || newCatName.substring(0, 3).toUpperCase(),
-      emoji: newCatEmoji || "📦",
-    };
-    setCategories([...categories, newCategory]);
+  const { data: categories = [], isLoading } = useApiCategories({
+    tenantId: currentBusiness?.id,
+    enabled: !!currentBusiness?.id,
+  });
+
+  const { mutate: createCategory, isPending: isCreatingCategory } =
+    useCreateCategory();
+  const { mutate: updateCategory, isPending: isUpdatingCategory } =
+    useUpdateCategory();
+
+  const isSaving = isCreatingCategory || isUpdatingCategory;
+
+  const resetAndCloseModal = () => {
     setShowAddModal(false);
-    setNewCatName("");
-    setNewCatCode("");
-    setNewCatEmoji("");
+    setEditingCategory(null);
+    setCategoryName("");
+    setCategoryDescription("");
+  };
+
+  const openAddModal = () => {
+    setEditingCategory(null);
+    setCategoryName("");
+    setCategoryDescription("");
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryName(category.name || "");
+    setCategoryDescription(category.description || "");
+    setShowAddModal(true);
+  };
+
+  const handleSaveCategory = () => {
+    if (!currentBusiness?.id) {
+      Alert.alert("Business not selected", "Please select a business first.");
+      return;
+    }
+
+    if (!categoryName.trim()) {
+      Alert.alert("Validation Error", "Please enter category name");
+      return;
+    }
+
+    const payload = {
+      name: categoryName.trim(),
+      description: categoryDescription.trim() || categoryName.trim(),
+    };
+
+    if (editingCategory) {
+      updateCategory(
+        {
+          tenantId: currentBusiness.id,
+          categoryId: editingCategory.id,
+          category: payload,
+        },
+        {
+          onSuccess: () => {
+            resetAndCloseModal();
+          },
+          onError: (error) => {
+            Alert.alert("Error", error.message || "Failed to update category");
+          },
+        },
+      );
+      return;
+    }
+
+    createCategory(
+      {
+        tenantId: currentBusiness.id,
+        category: payload,
+      },
+      {
+        onSuccess: () => {
+          resetAndCloseModal();
+        },
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to create category");
+        },
+      },
+    );
   };
 
   return (
@@ -65,23 +136,38 @@ export default function CategoriesScreen() {
         </View>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => setShowAddModal(true)}
+          onPress={openAddModal}
         >
           <Ionicons name="add" size={24} color={BrandColors.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.listContainer}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={BrandColors.primary} />
+          </View>
+        ) : null}
+
+        {!isLoading && categories.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No categories found</Text>
+          </View>
+        ) : null}
+
         {categories.map((cat) => (
           <View key={cat.id} style={styles.card}>
             <View style={styles.emojiContainer}>
-              <Text style={styles.emojiText}>{cat.emoji}</Text>
+              <Ionicons name="pricetag-outline" size={20} color={BrandColors.primary} />
             </View>
             <View style={styles.cardInfo}>
               <Text style={styles.cardTitle}>{cat.name}</Text>
-              <Text style={styles.cardSubtitle}>Code: {cat.shortCode}</Text>
+              <Text style={styles.cardSubtitle}>{cat.description || "-"}</Text>
             </View>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => openEditModal(cat)}
+            >
               <Ionicons name="pencil" size={20} color={BrandColors.primary} />
             </TouchableOpacity>
           </View>
@@ -92,8 +178,10 @@ export default function CategoriesScreen() {
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Category</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+              <Text style={styles.modalTitle}>
+                {editingCategory ? "Edit Category" : "Add Category"}
+              </Text>
+              <TouchableOpacity onPress={resetAndCloseModal}>
                 <Ionicons
                   name="close"
                   size={24}
@@ -107,39 +195,30 @@ export default function CategoriesScreen() {
                 <Text style={styles.inputLabel}>Category Name</Text>
                 <TextInput
                   style={styles.input}
-                  value={newCatName}
-                  onChangeText={setNewCatName}
+                  value={categoryName}
+                  onChangeText={setCategoryName}
                   placeholder="e.g. Desserts"
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Short Code</Text>
+                <Text style={styles.inputLabel}>Description</Text>
                 <TextInput
                   style={styles.input}
-                  value={newCatCode}
-                  onChangeText={setNewCatCode}
-                  placeholder="e.g. DES"
-                  autoCapitalize="characters"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Emoji Selector</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newCatEmoji}
-                  onChangeText={setNewCatEmoji}
-                  placeholder="Paste an emoji (e.g. 🍰)"
-                  maxLength={5}
+                  value={categoryDescription}
+                  onChangeText={setCategoryDescription}
+                  placeholder="e.g. Food"
                 />
               </View>
 
               <TouchableOpacity
                 style={styles.saveButton}
-                onPress={handleAddCategory}
+                onPress={handleSaveCategory}
+                disabled={isSaving}
               >
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>
+                  {isSaving ? "Saving..." : "Save"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -181,6 +260,20 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: Spacing.lg,
+  },
+  loadingContainer: {
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+  },
+  emptyContainer: {
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  emptyText: {
+    color: BrandColors.gray[500],
+    fontSize: FontSizes.md,
   },
   card: {
     flexDirection: "row",

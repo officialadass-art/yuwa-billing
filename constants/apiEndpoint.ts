@@ -19,6 +19,11 @@ export const APIEndpoints = {
     create: "/tenants/:tenantId/products",
     delete: "/tenants/:tenantId/products/:productId",
   },
+  categories: {
+    list: "/tenants/:tenantId/categories",
+    create: "/tenants/:tenantId/categories",
+    update: "/tenants/:tenantId/categories/:categoryId",
+  },
   invoices: {
     create: "/tenants/:tenantId/invoices",
     list: "/tenants/:tenantId/invoices",
