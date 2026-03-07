@@ -8,7 +8,8 @@ export const APIEndpoints = {
   },
   business: {
     list: "/tenants",
-    create: "/tenants/create"
+    create: "/tenants/create",
+    update: "/tenants/:tenantId",
   },
   dashboard: {
     summary: "/tenants/:tenantId/dashboard/summary",

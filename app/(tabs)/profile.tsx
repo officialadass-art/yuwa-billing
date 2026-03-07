@@ -11,14 +11,18 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     Alert,
+  Keyboard,
+  KeyboardAvoidingView,
     Linking,
     Modal,
+  Platform,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+  TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,6 +30,13 @@ import {
     BLEPrinter,
     IBLEPrinter,
 } from "react-native-thermal-receipt-printer-image-qr";
+import { useUpdateApiTenant } from "@/hooks/use-api-tenants";
+
+const COUNTRIES = [
+  { label: "🇮🇳  India", value: "IN" },
+  { label: "🇦🇪  UAE", value: "UAE" },
+  { label: "🇺🇸  United States", value: "US" },
+];
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -73,7 +84,7 @@ const MenuItem = ({
 );
 
 export default function ProfileScreen() {
-  const { user, currentBusiness, logout } = useAuth();
+  const { user, currentBusiness, logout, selectBusiness } = useAuth();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
   const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
@@ -92,15 +103,41 @@ export default function ProfileScreen() {
   const [editCafeName, setEditCafeName] = useState(
     currentBusiness?.name || "CafeBill",
   );
-  const [editCafeAddress, setEditCafeAddress] = useState(
+  const [editAddressLine1, setEditAddressLine1] = useState(
     currentBusiness?.address?.line1 || "",
   );
+  const [editAddressLine2, setEditAddressLine2] = useState(
+    currentBusiness?.address?.line2 || "",
+  );
+  const [editCity, setEditCity] = useState(currentBusiness?.address?.city || "");
+  const [editState, setEditState] = useState(currentBusiness?.address?.state || "");
+  const [editPostalCode, setEditPostalCode] = useState(
+    currentBusiness?.address?.postalCode || "",
+  );
+  const [editCountry, setEditCountry] = useState(
+    currentBusiness?.address?.country || "",
+  );
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+
+  const { mutate: updateTenant, isPending: isUpdatingTenant } =
+    useUpdateApiTenant();
 
   useEffect(() => {
     if (showPrinterModal) {
       discoverPrinters();
     }
   }, [showPrinterModal]);
+
+  useEffect(() => {
+    setEditGst(currentBusiness?.leagalInfo?.gstNumber || "");
+    setEditCafeName(currentBusiness?.name || "CafeBill");
+    setEditAddressLine1(currentBusiness?.address?.line1 || "");
+    setEditAddressLine2(currentBusiness?.address?.line2 || "");
+    setEditCity(currentBusiness?.address?.city || "");
+    setEditState(currentBusiness?.address?.state || "");
+    setEditPostalCode(currentBusiness?.address?.postalCode || "");
+    setEditCountry(currentBusiness?.address?.country || "");
+  }, [currentBusiness]);
 
   const discoverPrinters = async () => {
     try {
@@ -184,6 +221,65 @@ export default function ProfileScreen() {
     router.push("/auth/business-list");
   };
 
+  const handleOpenEditBusinessModal = () => {
+    setEditGst(currentBusiness?.leagalInfo?.gstNumber || "");
+    setEditCafeName(currentBusiness?.name || "CafeBill");
+    setEditAddressLine1(currentBusiness?.address?.line1 || "");
+    setEditAddressLine2(currentBusiness?.address?.line2 || "");
+    setEditCity(currentBusiness?.address?.city || "");
+    setEditState(currentBusiness?.address?.state || "");
+    setEditPostalCode(currentBusiness?.address?.postalCode || "");
+    setEditCountry(currentBusiness?.address?.country || "");
+    setCountryDropdownOpen(false);
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveBusinessDetails = () => {
+    if (!currentBusiness?.id) {
+      Alert.alert("Business not selected", "Please select a business first.");
+      return;
+    }
+
+    const payload = {
+      name: editCafeName.trim(),
+      address: {
+        line1: editAddressLine1.trim(),
+        line2: editAddressLine2.trim() || undefined,
+        city: editCity.trim(),
+        state: editState.trim(),
+        postalCode: editPostalCode.trim(),
+        country: editCountry.trim(),
+      },
+      logoUrl: currentBusiness.logo || "/logo.png",
+      defaultTaxRate: 0.18,
+      leagalInfo: {
+        gstNumber: editGst.trim() || undefined,
+      },
+    };
+
+    updateTenant(
+      { tenantId: currentBusiness.id, payload },
+      {
+        onSuccess: () => {
+          selectBusiness({
+            ...currentBusiness,
+            name: payload.name,
+            address: payload.address,
+            leagalInfo: {
+              ...currentBusiness.leagalInfo,
+              gstNumber: payload.leagalInfo.gstNumber,
+            },
+          });
+          setShowEditProfileModal(false);
+          Alert.alert("Success", "Business details updated successfully");
+        },
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to update business");
+        },
+      },
+    );
+  };
+
   const getCafeAddress = () => {
     if (!currentBusiness) return "Your Cafe Address";
     const { address } = currentBusiness;
@@ -246,7 +342,7 @@ export default function ProfileScreen() {
         {/* Business Card */}
         <TouchableOpacity
           style={styles.businessCard}
-          onPress={() => setShowEditProfileModal(true)}
+          onPress={handleOpenEditBusinessModal}
           activeOpacity={0.7}
         >
           <View style={styles.businessLogo}>
@@ -295,7 +391,7 @@ export default function ProfileScreen() {
               icon="document-text-outline"
               label="GST"
               subtitle={editGst || "Not configured"}
-              onPress={() => setShowEditProfileModal(true)}
+              onPress={handleOpenEditBusinessModal}
             />
             <MenuItem
               icon="print-outline"
@@ -364,74 +460,235 @@ export default function ProfileScreen() {
       <Modal
         visible={showEditProfileModal}
         animationType="slide"
-        transparent={true}
+        transparent={false}
+        presentationStyle="fullScreen"
         onRequestClose={() => setShowEditProfileModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setShowEditProfileModal(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={BrandColors.gray[600]}
-                />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <SafeAreaView style={styles.businessModalOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={styles.businessModalKeyboard}
+            >
+              <View style={styles.businessModalContainer}>
+                <View style={styles.businessModalHeader}>
+                  <Text style={styles.businessModalTitle}>Edit Business</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowEditProfileModal(false)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={BrandColors.gray[700]}
+                    />
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Cafe Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editCafeName}
-                  onChangeText={setEditCafeName}
-                  placeholder="Enter cafe name"
-                  placeholderTextColor={BrandColors.gray[400]}
-                />
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  contentContainerStyle={styles.businessModalScroll}
+                >
+                  <Text style={styles.inputLabel}>Cafe Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editCafeName}
+                    onChangeText={setEditCafeName}
+                    placeholder="Enter cafe name"
+                    placeholderTextColor={BrandColors.gray[400]}
+                    returnKeyType="next"
+                  />
+
+                  <View style={styles.sectionDivider}>
+                    <Ionicons
+                      name="location-outline"
+                      size={18}
+                      color={BrandColors.primary}
+                    />
+                    <Text style={styles.formSectionTitle}>Address</Text>
+                  </View>
+
+                  <Text style={styles.inputLabel}>Address Lane 1</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editAddressLine1}
+                    onChangeText={setEditAddressLine1}
+                    placeholder="Street address"
+                    placeholderTextColor={BrandColors.gray[400]}
+                    returnKeyType="next"
+                  />
+
+                  <View style={styles.optionalRow}>
+                    <Text style={styles.inputLabel}>Address Lane 2</Text>
+                    <Text style={styles.optionalTag}>Optional</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    value={editAddressLine2}
+                    onChangeText={setEditAddressLine2}
+                    placeholder="Apt, suite, floor, etc."
+                    placeholderTextColor={BrandColors.gray[400]}
+                    returnKeyType="next"
+                  />
+
+                  <View style={styles.row}>
+                    <View style={styles.halfField}>
+                      <Text style={styles.inputLabel}>City</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={editCity}
+                        onChangeText={setEditCity}
+                        placeholder="City"
+                        placeholderTextColor={BrandColors.gray[400]}
+                        returnKeyType="next"
+                      />
+                    </View>
+                    <View style={styles.halfField}>
+                      <Text style={styles.inputLabel}>State</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={editState}
+                        onChangeText={setEditState}
+                        placeholder="State"
+                        placeholderTextColor={BrandColors.gray[400]}
+                        returnKeyType="next"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={styles.halfField}>
+                      <Text style={styles.inputLabel}>Zip Code</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={editPostalCode}
+                        onChangeText={setEditPostalCode}
+                        placeholder="Zip Code"
+                        placeholderTextColor={BrandColors.gray[400]}
+                        keyboardType="number-pad"
+                        returnKeyType="next"
+                      />
+                    </View>
+                    <View style={styles.halfField}>
+                      <Text style={styles.inputLabel}>Country</Text>
+                      <TouchableOpacity
+                        style={styles.dropdownButton}
+                        onPress={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownButtonText,
+                            !editCountry && { color: BrandColors.gray[400] },
+                          ]}
+                        >
+                          {COUNTRIES.find((c) => c.value === editCountry)?.label ||
+                            "Select"}
+                        </Text>
+                        <Ionicons
+                          name={countryDropdownOpen ? "chevron-up" : "chevron-down"}
+                          size={18}
+                          color={BrandColors.gray[500]}
+                        />
+                      </TouchableOpacity>
+
+                      {countryDropdownOpen && (
+                        <View style={styles.dropdownList}>
+                          {COUNTRIES.map((country) => (
+                            <TouchableOpacity
+                              key={country.value}
+                              style={[
+                                styles.dropdownItem,
+                                editCountry === country.value &&
+                                  styles.dropdownItemActive,
+                              ]}
+                              onPress={() => {
+                                setEditCountry(country.value);
+                                setCountryDropdownOpen(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.dropdownItemText,
+                                  editCountry === country.value &&
+                                    styles.dropdownItemTextActive,
+                                ]}
+                              >
+                                {country.label}
+                              </Text>
+                              {editCountry === country.value && (
+                                <Ionicons
+                                  name="checkmark"
+                                  size={18}
+                                  color={BrandColors.primary}
+                                />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.sectionDivider}>
+                    <Ionicons
+                      name="document-text-outline"
+                      size={18}
+                      color={BrandColors.primary}
+                    />
+                    <Text style={styles.formSectionTitle}>Legal</Text>
+                  </View>
+
+                  <Text style={styles.inputLabel}>GST Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editGst}
+                    onChangeText={setEditGst}
+                    placeholder="Enter GST number"
+                    autoCapitalize="characters"
+                    placeholderTextColor={BrandColors.gray[400]}
+                    returnKeyType="done"
+                  />
+
+                  <TouchableOpacity
+                    style={[
+                      styles.saveButton,
+                      (!editCafeName ||
+                        !editAddressLine1 ||
+                        !editCity ||
+                        !editState ||
+                        !editPostalCode ||
+                        !editCountry ||
+                        isUpdatingTenant) &&
+                        styles.saveButtonDisabled,
+                    ]}
+                    onPress={handleSaveBusinessDetails}
+                    disabled={
+                      !editCafeName ||
+                      !editAddressLine1 ||
+                      !editCity ||
+                      !editState ||
+                      !editPostalCode ||
+                      !editCountry ||
+                      isUpdatingTenant
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={BrandColors.white}
+                    />
+                    <Text style={styles.saveButtonText}>
+                      {isUpdatingTenant ? "Saving..." : "Save Details"}
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
               </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Cafe Address</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editCafeAddress}
-                  onChangeText={setEditCafeAddress}
-                  placeholder="Enter address details"
-                  placeholderTextColor={BrandColors.gray[400]}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>GST Number</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editGst}
-                  onChangeText={setEditGst}
-                  placeholder="Enter GST number"
-                  autoCapitalize="characters"
-                  placeholderTextColor={BrandColors.gray[400]}
-                />
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalSecondaryButton}
-                onPress={() => setShowEditProfileModal(false)}
-              >
-                <Text style={styles.modalSecondaryButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalPrimaryButton}
-                onPress={() => setShowEditProfileModal(false)}
-              >
-                <Text style={styles.modalPrimaryButtonText}>Save Details</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal
@@ -678,6 +935,37 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[400],
     marginTop: Spacing.xs,
   },
+  businessModalOverlay: {
+    flex: 1,
+    backgroundColor: BrandColors.white,
+  },
+  businessModalKeyboard: {
+    flex: 1,
+  },
+  businessModalContainer: {
+    flex: 1,
+    backgroundColor: BrandColors.white,
+  },
+  businessModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  businessModalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  businessModalScroll: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -842,13 +1130,116 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[700],
     marginBottom: Spacing.xs,
   },
-  input: {
+  formSectionTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  sectionDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[200],
+  },
+  optionalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.xs,
+  },
+  optionalTag: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[400],
+    fontStyle: "italic",
+  },
+  row: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  halfField: {
+    flex: 1,
+  },
+  dropdownButton: {
+    height: 48,
     borderWidth: 1,
     borderColor: BrandColors.gray[300],
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: BrandColors.gray[50],
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  dropdownButtonText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[900],
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: BrandColors.gray[200],
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.white,
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.md,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 10,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
+  },
+  dropdownItemActive: {
+    backgroundColor: BrandColors.primary + "10",
+  },
+  dropdownItemText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[800],
+  },
+  dropdownItemTextActive: {
+    color: BrandColors.primary,
+    fontWeight: "600",
+  },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
     fontSize: FontSizes.md,
     color: BrandColors.gray[900],
     backgroundColor: BrandColors.gray[50],
+    marginBottom: Spacing.md,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    height: 52,
+    backgroundColor: BrandColors.primary,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    fontSize: FontSizes.lg,
+    fontWeight: "700",
+    color: BrandColors.white,
   },
 });
