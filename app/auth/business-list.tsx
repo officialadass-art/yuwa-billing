@@ -7,7 +7,7 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
-import { Business } from "@/types";
+import { Business, Roles } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -38,7 +38,7 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken, isAuthenticated, token } = useAuth();
+  const { user, selectBusiness, getToken, isAuthenticated, token, getCurrentBusinessRole } = useAuth();
   const {
     data: businessList,
     isLoading,
@@ -59,7 +59,12 @@ export default function BusinessListScreen() {
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
-    router.replace("/(tabs)");
+
+    if (getCurrentBusinessRole() === Roles.OWNER) {
+      router.replace("/(tabs)");
+    } else {
+      router.replace("/(tabs)/billing");
+    }
   };
 
   const handleOpenModal = () => {

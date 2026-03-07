@@ -111,3 +111,9 @@ export interface Invoice {
     userId?: string; // Billed by
     createdAt: string;
 }
+
+export enum Roles {
+    ADMIN = 'admin',
+    OWNER = 'owner',
+    STAFF = 'staff'
+}

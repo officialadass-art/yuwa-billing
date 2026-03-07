@@ -25,9 +25,24 @@ interface AuthContextType extends AuthState {
   selectBusiness: (business: Business) => void;
   getToken: () => string | null;
   getRefreshToken: () => string | null;
+  getUserRoleByTenantId: (tenantId?: string | null) => string | null;
+  getCurrentBusinessRole: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthTokenTenant {
+  tenantId: string;
+  role: string;
+}
+
+interface AuthTokenPayload {
+  uid?: string;
+  phone?: string;
+  tenants?: AuthTokenTenant[];
+  iat?: number;
+  exp?: number;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 
@@ -97,9 +112,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authState.refreshToken;
   }
 
+  const decodeAuthTokenPayload = (token?: string | null): AuthTokenPayload | null => {
+    if (!token) return null;
+
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+
+    try {
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+
+      if (typeof globalThis.atob === 'function') {
+        return JSON.parse(globalThis.atob(paddedBase64));
+      }
+
+      const BufferCtor = (globalThis as { Buffer?: { from: (value: string, encoding: string) => { toString: (enc: string) => string } } }).Buffer;
+      if (BufferCtor?.from) {
+        const decoded = BufferCtor.from(paddedBase64, 'base64').toString('utf8');
+        return JSON.parse(decoded);
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getUserRoleByTenantId = (tenantId?: string | null): string | null => {
+    if (!tenantId) return null;
+
+    const payload = decodeAuthTokenPayload(authState.token);
+    if (!payload?.tenants?.length) return null;
+
+    const tenant = payload.tenants.find((item) => item.tenantId === tenantId);
+    return tenant?.role || null;
+  };
+
+  const getCurrentBusinessRole = (): string | null => {
+    return getUserRoleByTenantId(authState.currentBusiness?.id);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ ...authState, login, logout, selectBusiness, getToken, getRefreshToken }}
+      value={{
+        ...authState,
+        login,
+        logout,
+        selectBusiness,
+        getToken,
+        getRefreshToken,
+        getUserRoleByTenantId,
+        getCurrentBusinessRole,
+      }}
     >
       {children}
     </AuthContext.Provider>

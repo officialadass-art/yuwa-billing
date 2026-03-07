@@ -1,36 +1,36 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { useUpdateApiTenant } from "@/hooks/use-api-tenants";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
-    Linking,
-    Modal,
+  Linking,
+  Modal,
   Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
-    View,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    BLEPrinter,
-    IBLEPrinter,
+  BLEPrinter,
+  IBLEPrinter,
 } from "react-native-thermal-receipt-printer-image-qr";
-import { useUpdateApiTenant } from "@/hooks/use-api-tenants";
 
 const COUNTRIES = [
   { label: "🇮🇳  India", value: "IN" },
@@ -84,7 +84,7 @@ const MenuItem = ({
 );
 
 export default function ProfileScreen() {
-  const { user, currentBusiness, logout, selectBusiness } = useAuth();
+  const { user, currentBusiness, logout, selectBusiness, getCurrentBusinessRole } = useAuth();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
   const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
@@ -95,7 +95,7 @@ export default function ProfileScreen() {
   );
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-  const [editRole, setEditRole] = useState("Owner");
+  const [editRole, setEditRole] = useState("-");
   const [editMobile, setEditMobile] = useState(user?.mobile || "");
   const [editGst, setEditGst] = useState(
     currentBusiness?.leagalInfo?.gstNumber || "",
@@ -129,6 +129,8 @@ export default function ProfileScreen() {
   }, [showPrinterModal]);
 
   useEffect(() => {
+    const role = getCurrentBusinessRole();
+    setEditRole(role ? role.charAt(0).toUpperCase() + role.slice(1) : "-");
     setEditGst(currentBusiness?.leagalInfo?.gstNumber || "");
     setEditCafeName(currentBusiness?.name || "CafeBill");
     setEditAddressLine1(currentBusiness?.address?.line1 || "");
@@ -137,7 +139,7 @@ export default function ProfileScreen() {
     setEditState(currentBusiness?.address?.state || "");
     setEditPostalCode(currentBusiness?.address?.postalCode || "");
     setEditCountry(currentBusiness?.address?.country || "");
-  }, [currentBusiness]);
+  }, [currentBusiness, getCurrentBusinessRole]);
 
   const discoverPrinters = async () => {
     try {
