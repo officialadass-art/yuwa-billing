@@ -106,6 +106,37 @@ export default function BusinessListScreen() {
     });
   };
 
+  const getSubscriptionIndicatorColor = (business: Business) => {
+    const status: unknown = business.subscription?.status;
+    const isSubscriptionActive =
+      typeof status === "boolean"
+        ? status
+        : typeof status === "string"
+          ? status.toLowerCase() === "true"
+          : status instanceof Boolean
+            ? status.valueOf()
+            : false;
+
+    if (!isSubscriptionActive) {
+      return BrandColors.danger;
+    }
+
+    const endDateValue = business.subscription?.endDate;
+    if (endDateValue) {
+      const endDate = new Date(endDateValue);
+      if (!Number.isNaN(endDate.getTime())) {
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+        if (endDate < oneMonthFromNow) {
+          return BrandColors.warning;
+        }
+      }
+    }
+
+    return BrandColors.success;
+  };
+
   const renderBusinessItem = ({ item }: { item: Business }) => (
     <TouchableOpacity
       style={styles.businessCard}
@@ -126,6 +157,7 @@ export default function BusinessListScreen() {
           {item.address?.state} - {item.address?.postalCode},{" "}
           {item.address?.country}{" "}
         </Text>
+        {item.contact?.phone && 
         <View style={styles.businessMeta}>
           <Ionicons
             name="call-outline"
@@ -133,6 +165,16 @@ export default function BusinessListScreen() {
             color={BrandColors.gray[500]}
           />
           <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
+        </View>
+        }
+        <View style={styles.businessMeta}>
+          <Text style={styles.businessPhone}>Subscription: </Text>
+          <View
+            style={[
+              styles.subscriptionStatusDot,
+              { backgroundColor: getSubscriptionIndicatorColor(item) },
+            ]}
+          />
         </View>
       </View>
       <Ionicons
@@ -523,6 +565,11 @@ const styles = StyleSheet.create({
   businessPhone: {
     fontSize: FontSizes.sm,
     color: BrandColors.gray[500],
+  },
+  subscriptionStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: BorderRadius.full,
   },
   bottomContainer: {
     padding: Spacing.lg,

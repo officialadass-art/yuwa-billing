@@ -32,6 +32,14 @@ export interface Business {
       gstNumber?: string;
       panNumber?: string;
   };
+  subscription: {
+        status: Boolean,
+        endDate?: Date,
+        startDate?: Date,
+        logs?: [
+            {_date: Date, message: string}
+        ]
+    }
 }
 
 export interface MenuItem {

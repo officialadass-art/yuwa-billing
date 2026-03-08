@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,13 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -51,6 +51,37 @@ export default function DashboardScreen() {
   };
 
   const data = dashboardData || defaultData;
+
+  const getSubscriptionIndicatorColor = () => {
+    const status: unknown = currentBusiness?.subscription?.status;
+    const isSubscriptionActive =
+      typeof status === "boolean"
+        ? status
+        : typeof status === "string"
+          ? status.toLowerCase() === "true"
+          : status instanceof Boolean
+            ? status.valueOf()
+            : false;
+
+    if (!isSubscriptionActive) {
+      return BrandColors.danger;
+    }
+
+    const endDateValue = currentBusiness?.subscription?.endDate;
+    if (endDateValue) {
+      const endDate = new Date(endDateValue);
+      if (!Number.isNaN(endDate.getTime())) {
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+        if (endDate < oneMonthFromNow) {
+          return BrandColors.warning;
+        }
+      }
+    }
+
+    return BrandColors.success;
+  };
 
   // Simple Mock Custom Chart Bars data
   const customBarData = [
@@ -110,6 +141,15 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.subscriptionMeta}>
+              <Text style={styles.subscriptionText}>Subscription</Text>
+              <View
+                style={[
+                  styles.subscriptionStatusDot,
+                  { backgroundColor: getSubscriptionIndicatorColor() },
+                ]}
+              />
+          </View>
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -326,6 +366,31 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     color: BrandColors.white + "80",
     marginTop: Spacing.xs,
+  },
+  subscriptionMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    alignSelf: "flex-start",
+    backgroundColor: BrandColors.white + "26",
+    borderWidth: 1,
+    borderColor: BrandColors.white + "3D",
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  subscriptionText: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.black,
+    fontWeight: "600",
+  },
+  subscriptionStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: BrandColors.white,
   },
   notificationButton: {
     width: 44,
