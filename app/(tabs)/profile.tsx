@@ -93,7 +93,14 @@ export default function ProfileScreen() {
     getCurrentBusinessRole,
   } = useAuth();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
+  const [showTaxModal, setShowTaxModal] = useState(false);
   const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
+  const [taxPercentage, setTaxPercentage] = useState<string>(
+    currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
+  );
+  const [tempTaxPercentage, setTempTaxPercentage] = useState<string>(
+    currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
+  );
   const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
     null,
   );
@@ -293,6 +300,46 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleSaveTaxPercentage = () => {
+    if (!currentBusiness?.id) {
+      Alert.alert("Business not selected", "Please select a business first.");
+      return;
+    }
+
+    const taxValue = parseFloat(tempTaxPercentage) || 0;
+
+    if (taxValue < 0 || taxValue > 100) {
+      Alert.alert("Invalid Tax", "Tax percentage must be between 0 and 100");
+      return;
+    }
+
+    const payload = {
+      name: currentBusiness.name,
+      address: currentBusiness.address,
+      logoUrl: currentBusiness.logo || "/logo.png",
+      defaultTaxRate: taxValue,
+      leagalInfo: currentBusiness.leagalInfo,
+    };
+
+    updateTenant(
+      { tenantId: currentBusiness.id, payload },
+      {
+        onSuccess: () => {
+          selectBusiness({
+            ...currentBusiness,
+            defaultTaxRate: taxValue,
+          });
+          setTaxPercentage(tempTaxPercentage);
+          setShowTaxModal(false);
+          Alert.alert("Success", "Tax percentage updated successfully");
+        },
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to update tax");
+        },
+      },
+    );
+  };
+
   const handlePrinterSetup = async () => {
     try {
       // Request permissions before opening printer modal
@@ -419,6 +466,21 @@ export default function ProfileScreen() {
               label="GST"
               subtitle={editGst || "Not configured"}
               onPress={handleOpenEditBusinessModal}
+            />
+            <MenuItem
+              icon="card-outline"
+              label="Subscriptions"
+              subtitle="View and manage plans"
+              onPress={() => router.push("/subscriptions")}
+            />
+            <MenuItem
+              icon="pricetag-outline"
+              label="Tax"
+              subtitle={`${taxPercentage}% tax configured`}
+              onPress={() => {
+                setTempTaxPercentage(taxPercentage);
+                setShowTaxModal(true);
+              }}
             />
             <MenuItem
               icon="print-outline"
@@ -817,6 +879,69 @@ export default function ProfileScreen() {
                 onPress={() => setShowPrinterModal(false)}
               >
                 <Text style={styles.modalPrimaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Tax Percentage Modal */}
+      <Modal
+        visible={showTaxModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTaxModal(false)}
+      >
+        <View style={styles.taxModalOverlay}>
+          <View style={styles.taxModalContent}>
+            <View style={styles.taxModalHeader}>
+              <Text style={styles.taxModalTitle}>Set Tax Percentage</Text>
+              <TouchableOpacity
+                onPress={() => setShowTaxModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={BrandColors.gray[700]}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.taxModalBody}>
+              <Text style={styles.taxInputLabel}>Tax Percentage (%)</Text>
+              <View style={styles.taxInputContainer}>
+                <TextInput
+                  style={styles.taxInput}
+                  value={tempTaxPercentage}
+                  onChangeText={setTempTaxPercentage}
+                  placeholder="0"
+                  placeholderTextColor={BrandColors.gray[400]}
+                  keyboardType="decimal-pad"
+                  maxLength={5}
+                />
+                <Text style={styles.taxInputSuffix}>%</Text>
+              </View>
+              <Text style={styles.taxInputHint}>
+                Enter a value between 0 and 100
+              </Text>
+            </View>
+
+            <View style={styles.taxModalActions}>
+              <TouchableOpacity
+                style={styles.taxModalCancelButton}
+                onPress={() => setShowTaxModal(false)}
+              >
+                <Text style={styles.taxModalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.taxModalSaveButton}
+                onPress={handleSaveTaxPercentage}
+                disabled={isUpdatingTenant}
+              >
+                <Text style={styles.taxModalSaveButtonText}>
+                  {isUpdatingTenant ? "Saving..." : "Save"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1271,6 +1396,102 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: FontSizes.lg,
     fontWeight: "700",
+    color: BrandColors.white,
+  },
+  /* ─── Tax Modal Styles ─── */
+  taxModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  taxModalContent: {
+    backgroundColor: BrandColors.white,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingTop: Spacing.lg,
+    maxHeight: "60%",
+  },
+  taxModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[200],
+  },
+  taxModalTitle: {
+    fontSize: FontSizes.xl,
+    fontWeight: "700",
+    color: BrandColors.gray[900],
+  },
+  taxModalBody: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+  },
+  taxInputLabel: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[900],
+    marginBottom: Spacing.sm,
+  },
+  taxInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  taxInput: {
+    flex: 1,
+    height: 52,
+    borderWidth: 2,
+    borderColor: BrandColors.primary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    fontSize: FontSizes.lg,
+    color: BrandColors.gray[900],
+    backgroundColor: BrandColors.gray[50],
+  },
+  taxInputSuffix: {
+    fontSize: FontSizes.lg,
+    fontWeight: "600",
+    color: BrandColors.primary,
+    marginLeft: Spacing.sm,
+  },
+  taxInputHint: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+  },
+  taxModalActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+  },
+  taxModalCancelButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  taxModalCancelButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[700],
+  },
+  taxModalSaveButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  taxModalSaveButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
     color: BrandColors.white,
   },
 });

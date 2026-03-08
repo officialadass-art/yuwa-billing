@@ -1,9 +1,9 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
@@ -12,21 +12,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Alert,
+    FlatList,
+    Image,
+    Keyboard,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -38,7 +38,14 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken, isAuthenticated, token, getCurrentBusinessRole } = useAuth();
+  const {
+    user,
+    selectBusiness,
+    getToken,
+    isAuthenticated,
+    token,
+    getCurrentBusinessRole,
+  } = useAuth();
   const {
     data: businessList,
     isLoading,
@@ -121,6 +128,9 @@ export default function BusinessListScreen() {
       return {
         label: "Inactive",
         color: BrandColors.danger,
+        bgColor: BrandColors.danger + "15",
+        textColor: BrandColors.danger,
+        icon: "close-circle",
       };
     }
 
@@ -128,13 +138,29 @@ export default function BusinessListScreen() {
     if (endDateValue) {
       const endDate = new Date(endDateValue);
       if (!Number.isNaN(endDate.getTime())) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (endDate < today) {
+          return {
+            label: "Expired",
+            color: BrandColors.danger,
+            bgColor: BrandColors.danger + "15",
+            textColor: BrandColors.danger,
+            icon: "alert-circle",
+          };
+        }
+
         const oneMonthFromNow = new Date();
         oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
         if (endDate < oneMonthFromNow) {
           return {
-            label: "Expiring Soon",
+            label: "Expires Soon",
             color: BrandColors.warning,
+            bgColor: BrandColors.warning + "15",
+            textColor: BrandColors.warning,
+            icon: "time",
           };
         }
       }
@@ -143,6 +169,9 @@ export default function BusinessListScreen() {
     return {
       label: "Active",
       color: BrandColors.success,
+      bgColor: BrandColors.success + "15",
+      textColor: BrandColors.success,
+      icon: "checkmark-circle",
     };
   };
 
@@ -163,7 +192,29 @@ export default function BusinessListScreen() {
           />
         </View>
         <View style={styles.businessInfo}>
-          <Text style={styles.businessName}>{item.name}</Text>
+          <View style={styles.businessNameRow}>
+            <Text style={styles.businessName}>{item.name}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: subscriptionStatusInfo.bgColor },
+              ]}
+            >
+              <Ionicons
+                name={subscriptionStatusInfo.icon as any}
+                size={12}
+                color={subscriptionStatusInfo.textColor}
+              />
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  { color: subscriptionStatusInfo.textColor },
+                ]}
+              >
+                {subscriptionStatusInfo.label}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.businessAddress}>
             {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
             {item.address?.state} - {item.address?.postalCode},{" "}
@@ -179,17 +230,6 @@ export default function BusinessListScreen() {
               <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
             </View>
           )}
-          <View style={styles.businessMeta}>
-            <Text style={styles.businessPhone}>
-              Subscription: <View
-              style={[
-                styles.subscriptionStatusDot,
-                { backgroundColor: subscriptionStatusInfo.color },
-              ]}
-            /> {subscriptionStatusInfo.label}
-            </Text>
-            
-          </View>
         </View>
         <Ionicons
           name="chevron-forward"
@@ -561,11 +601,30 @@ const styles = StyleSheet.create({
   businessInfo: {
     flex: 1,
   },
+  businessNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+    flexWrap: "wrap",
+  },
   businessName: {
     fontSize: FontSizes.lg,
     fontWeight: "600",
     color: BrandColors.gray[900],
-    marginBottom: Spacing.xs,
+    flex: 1,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    gap: 4,
+  },
+  statusBadgeText: {
+    fontSize: FontSizes.xs,
+    fontWeight: "600",
   },
   businessAddress: {
     fontSize: FontSizes.sm,
@@ -580,11 +639,6 @@ const styles = StyleSheet.create({
   businessPhone: {
     fontSize: FontSizes.sm,
     color: BrandColors.gray[500],
-  },
-  subscriptionStatusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.full,
   },
   bottomContainer: {
     padding: Spacing.lg,
