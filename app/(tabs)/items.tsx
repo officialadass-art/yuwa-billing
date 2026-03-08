@@ -66,11 +66,21 @@ export default function ItemsScreen() {
   );
 
   const openAddModal = () => {
+    // Check if categories exist
+    if (categoryItems.length === 0) {
+      Toast.show({
+        type: "error",
+        text1: "No Categories",
+        text2: "Please create a category first in the Categories section",
+      });
+      return;
+    }
+
     setEditingItem(null);
     setFormData({
       name: "",
       price: "",
-      categoryId: "Coffee",
+      categoryId: categoryItems[0]?.id || "", // Use first category from API
       description: "",
       imgUrl: "",
     });
@@ -111,6 +121,14 @@ export default function ItemsScreen() {
         type: "error",
         text1: "Validation Error",
         text2: "Price must be a valid number",
+      });
+      return false;
+    }
+    if (!formData.categoryId) {
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please select a category",
       });
       return false;
     }
@@ -437,33 +455,47 @@ export default function ItemsScreen() {
               {/* Category Selector */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Category *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.categoryOptions}>
-                    {categoryItems.map((cat) => (
-                      <TouchableOpacity
-                        key={cat.id}
-                        style={[
-                          styles.categoryOption,
-                          formData.categoryId === cat.id &&
-                            styles.categoryOptionActive,
-                        ]}
-                        onPress={() =>
-                          setFormData({ ...formData, categoryId: cat.id })
-                        }
-                      >
-                        <Text
+                {categoryItems.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.categoryOptions}>
+                      {categoryItems.map((cat) => (
+                        <TouchableOpacity
+                          key={cat.id}
                           style={[
-                            styles.categoryOptionText,
+                            styles.categoryOption,
                             formData.categoryId === cat.id &&
-                              styles.categoryOptionTextActive,
+                              styles.categoryOptionActive,
                           ]}
+                          onPress={() =>
+                            setFormData({ ...formData, categoryId: cat.id })
+                          }
                         >
-                          {cat.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={[
+                              styles.categoryOptionText,
+                              formData.categoryId === cat.id &&
+                                styles.categoryOptionTextActive,
+                            ]}
+                          >
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                ) : (
+                  <View style={styles.noCategoriesContainer}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={24}
+                      color={BrandColors.danger}
+                    />
+                    <Text style={styles.noCategoriesText}>
+                      No categories found. Please create categories first in the
+                      Categories section.
+                    </Text>
                   </View>
-                </ScrollView>
+                )}
               </View>
 
               {/* Description Input */}
@@ -746,6 +778,20 @@ const styles = StyleSheet.create({
   categoryOptionTextActive: {
     color: BrandColors.white,
     fontWeight: "600",
+  },
+  noCategoriesContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BrandColors.danger + "10",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.md,
+  },
+  noCategoriesText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    color: BrandColors.danger,
+    fontWeight: "500",
   },
   modalActions: {
     flexDirection: "row",

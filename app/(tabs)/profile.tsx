@@ -6,6 +6,7 @@ import {
     Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { requestPrinterPermissions } from "@/hooks/use-permissions";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -184,6 +185,20 @@ export default function ProfileScreen() {
     router.push("/auth/business-list");
   };
 
+  const handlePrinterSetup = async () => {
+    try {
+      // Request permissions before opening printer modal
+      const permissionsGranted = await requestPrinterPermissions();
+
+      if (permissionsGranted) {
+        setShowPrinterModal(true);
+      }
+    } catch (error) {
+      console.error("Error requesting printer permissions:", error);
+      Alert.alert("Error", "Failed to request permissions. Please try again.");
+    }
+  };
+
   const getCafeAddress = () => {
     if (!currentBusiness) return "Your Cafe Address";
     const { address } = currentBusiness;
@@ -301,7 +316,7 @@ export default function ProfileScreen() {
               icon="print-outline"
               label="Printer setup"
               subtitle="Configure receipt printer"
-              onPress={() => setShowPrinterModal(true)}
+              onPress={handlePrinterSetup}
             />
           </View>
         </View>

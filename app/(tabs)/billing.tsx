@@ -130,8 +130,8 @@ export default function BillingScreen() {
     try {
       Toast.show({
         type: "info",
-        text1: "Printing",
-        text2: "Preparing bill for printing...",
+        text1: "Printing & Saving",
+        text2: "Printing bill and saving...",
       });
 
       // Build a simple and clean bill format
@@ -170,7 +170,6 @@ export default function BillingScreen() {
         "Tax (5%)".padEnd(20) + `Rs.${tax.toFixed(2)}`.padStart(10);
       const totalLineText =
         "Total".padEnd(20) + `Rs.${total.toFixed(2)}`.padStart(10);
-      // const totalLine = `<B>${totalLineText}</B>`;
 
       billText += subtotalLine + "\n";
       billText += taxLine + "\n";
@@ -182,20 +181,63 @@ export default function BillingScreen() {
       billText += "<C>Thank You!</C>\n";
       billText += "<C>Visit Again</C>\n\n\n";
 
-      // Print the bill
+      // Print the bill first
       await BLEPrinter.printText(billText);
 
       Toast.show({
         type: "success",
-        text1: "Success",
-        text2: "Bill printed successfully!",
+        text1: "Bill Printed",
+        text2: "Saving bill...",
       });
+
+      // Then save the bill
+      const payload = {
+        tenantId: currentBusiness?.id || "",
+        invoice: {
+          tenantId: currentBusiness?.id || "",
+          customerName: "Customer",
+          customerPhone: "0000000000",
+          items: billItems.map((bi) => ({
+            productId: bi.menuItem.id,
+            productName: bi.menuItem.name,
+            quantity: bi.quantity,
+            unitPrice: bi.menuItem.price,
+            totalPrice: bi.subtotal,
+          })),
+          discount: 0,
+          paymentMethod: "cash" as const,
+          status: "paid" as const,
+        },
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        createInvoice(payload, {
+          onSuccess: () => {
+            Toast.show({
+              type: "success",
+              text1: "Success",
+              text2: "Bill printed and saved successfully!",
+            });
+            resolve();
+          },
+          onError: (error) => {
+            reject(error);
+          },
+        });
+      });
+
+      // Clear the bill after successful print and save
+      clearBill();
+      setShowBillModal(false);
     } catch (error) {
-      console.error("Print error:", error);
+      console.error("Print/Save error:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to print bill. Make sure printer is connected.",
+        text2:
+          error instanceof Error
+            ? error.message
+            : "Failed to print or save bill. Please try again.",
       });
     }
   };
