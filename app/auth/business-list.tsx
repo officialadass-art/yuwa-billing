@@ -106,7 +106,7 @@ export default function BusinessListScreen() {
     });
   };
 
-  const getSubscriptionIndicatorColor = (business: Business) => {
+  const getSubscriptionStatusInfo = (business: Business) => {
     const status: unknown = business.subscription?.status;
     const isSubscriptionActive =
       typeof status === "boolean"
@@ -118,7 +118,10 @@ export default function BusinessListScreen() {
             : false;
 
     if (!isSubscriptionActive) {
-      return BrandColors.danger;
+      return {
+        label: "Inactive",
+        color: BrandColors.danger,
+      };
     }
 
     const endDateValue = business.subscription?.endDate;
@@ -129,61 +132,73 @@ export default function BusinessListScreen() {
         oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
         if (endDate < oneMonthFromNow) {
-          return BrandColors.warning;
+          return {
+            label: "Expiring Soon",
+            color: BrandColors.warning,
+          };
         }
       }
     }
 
-    return BrandColors.success;
+    return {
+      label: "Active",
+      color: BrandColors.success,
+    };
   };
 
-  const renderBusinessItem = ({ item }: { item: Business }) => (
-    <TouchableOpacity
-      style={styles.businessCard}
-      onPress={() => handleSelectBusiness(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.businessIcon}>
-        <Image
-          source={require("@/assets/images/logo.png")}
-          style={{ width: 40, height: 40 }}
-          resizeMode="contain"
+  const renderBusinessItem = ({ item }: { item: Business }) => {
+    const subscriptionStatusInfo = getSubscriptionStatusInfo(item);
+
+    return (
+      <TouchableOpacity
+        style={styles.businessCard}
+        onPress={() => handleSelectBusiness(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.businessIcon}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={styles.businessInfo}>
+          <Text style={styles.businessName}>{item.name}</Text>
+          <Text style={styles.businessAddress}>
+            {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
+            {item.address?.state} - {item.address?.postalCode},{" "}
+            {item.address?.country}{" "}
+          </Text>
+          {item.contact?.phone && (
+            <View style={styles.businessMeta}>
+              <Ionicons
+                name="call-outline"
+                size={14}
+                color={BrandColors.gray[500]}
+              />
+              <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
+            </View>
+          )}
+          <View style={styles.businessMeta}>
+            <Text style={styles.businessPhone}>
+              Subscription: <View
+              style={[
+                styles.subscriptionStatusDot,
+                { backgroundColor: subscriptionStatusInfo.color },
+              ]}
+            /> {subscriptionStatusInfo.label}
+            </Text>
+            
+          </View>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={24}
+          color={BrandColors.gray[400]}
         />
-      </View>
-      <View style={styles.businessInfo}>
-        <Text style={styles.businessName}>{item.name}</Text>
-        <Text style={styles.businessAddress}>
-          {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
-          {item.address?.state} - {item.address?.postalCode},{" "}
-          {item.address?.country}{" "}
-        </Text>
-        {item.contact?.phone && 
-        <View style={styles.businessMeta}>
-          <Ionicons
-            name="call-outline"
-            size={14}
-            color={BrandColors.gray[500]}
-          />
-          <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
-        </View>
-        }
-        <View style={styles.businessMeta}>
-          <Text style={styles.businessPhone}>Subscription: </Text>
-          <View
-            style={[
-              styles.subscriptionStatusDot,
-              { backgroundColor: getSubscriptionIndicatorColor(item) },
-            ]}
-          />
-        </View>
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={24}
-        color={BrandColors.gray[400]}
-      />
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const selectedCountryLabel = COUNTRIES.find(
     (c) => c.value === country,
