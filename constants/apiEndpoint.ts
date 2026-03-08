@@ -8,7 +8,8 @@ export const APIEndpoints = {
   },
   business: {
     list: "/tenants",
-    create: "/tenants/create"
+    create: "/tenants/create",
+    update: "/tenants/:tenantId",
   },
   dashboard: {
     summary: "/tenants/:tenantId/dashboard/summary",
@@ -19,9 +20,15 @@ export const APIEndpoints = {
     create: "/tenants/:tenantId/products",
     delete: "/tenants/:tenantId/products/:productId",
   },
+  categories: {
+    list: "/tenants/:tenantId/categories",
+    create: "/tenants/:tenantId/categories",
+    update: "/tenants/:tenantId/categories/:categoryId",
+  },
   invoices: {
     create: "/tenants/:tenantId/invoices",
     list: "/tenants/:tenantId/invoices",
     details: "/tenants/:tenantId/invoices/:invoiceId",
+    filter: "/tenants/:tenantId/invoices/filter",
   }
 }

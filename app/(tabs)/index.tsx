@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,13 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -51,6 +51,48 @@ export default function DashboardScreen() {
   };
 
   const data = dashboardData || defaultData;
+
+  const getSubscriptionStatusInfo = () => {
+    const status: unknown = currentBusiness?.subscription?.status;
+    const isSubscriptionActive =
+      typeof status === "boolean"
+        ? status
+        : typeof status === "string"
+          ? status.toLowerCase() === "true"
+          : status instanceof Boolean
+            ? status.valueOf()
+            : false;
+
+    if (!isSubscriptionActive) {
+      return {
+        label: "Inactive",
+        color: BrandColors.danger,
+      };
+    }
+
+    const endDateValue = currentBusiness?.subscription?.endDate;
+    if (endDateValue) {
+      const endDate = new Date(endDateValue);
+      if (!Number.isNaN(endDate.getTime())) {
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+        if (endDate < oneMonthFromNow) {
+          return {
+            label: "Expiring Soon",
+            color: BrandColors.warning,
+          };
+        }
+      }
+    }
+
+    return {
+      label: "Active",
+      color: BrandColors.success,
+    };
+  };
+
+  const subscriptionStatusInfo = getSubscriptionStatusInfo();
 
   // Simple Mock Custom Chart Bars data
   const customBarData = [
@@ -110,6 +152,31 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.subscriptionRow}>
+          <View style={styles.subscriptionMeta}>
+            <Text style={styles.subscriptionText}>
+              Subscription: <View
+              style={[
+                styles.subscriptionStatusDot,
+                { backgroundColor: subscriptionStatusInfo.color },
+              ]}
+            /> {subscriptionStatusInfo.label}
+            </Text>
+            
+          </View>
+          <TouchableOpacity
+            style={styles.renewButton}
+            onPress={() => router.navigate("/billing")}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name="refresh-outline"
+              size={14}
+              color={BrandColors.primary}
+            />
+            <Text style={styles.renewButtonText}>Renew / Extend</Text>
+          </TouchableOpacity>
+        </View>
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -327,6 +394,31 @@ const styles = StyleSheet.create({
     color: BrandColors.white + "80",
     marginTop: Spacing.xs,
   },
+  subscriptionMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    alignSelf: "flex-start",
+    backgroundColor: BrandColors.white + "26",
+    borderWidth: 1,
+    borderColor: BrandColors.white + "3D",
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+  },
+  subscriptionText: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.black,
+    fontWeight: "600",
+  },
+  subscriptionStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: BrandColors.white,
+  },
   notificationButton: {
     width: 44,
     height: 44,
@@ -350,6 +442,28 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: Spacing.sm,
     paddingHorizontal: Spacing.lg,
+  },
+  subscriptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+  },
+  renewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: BrandColors.white,
+    borderWidth: 1,
+    borderColor: BrandColors.primary + "33",
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 6,
+  },
+  renewButtonText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
+    color: BrandColors.primary,
   },
   statsContainer: {
     flexDirection: "row",

@@ -8,7 +8,7 @@ import { ApiResponse, MenuItem } from '@/types';
  * Get Products/Menu Items Hook
  */
 const fetchProducts = async (tenantId: string) => {
-  const { data } = await apiClient.get<ApiResponse<MenuItem[]>>(
+  const { data } = await apiClient.get<ApiResponse>(
     APIEndpoints.products.list.replace(':tenantId', tenantId)
   );
   return data.data;
@@ -35,7 +35,7 @@ export const useApiProducts = ({ tenantId, enabled = true, ...options }: UseProd
 interface CreateProductPayload extends Omit<MenuItem, 'id'> {}
 
 const createProduct = async (tenantId: string, product: CreateProductPayload) => {
-  const { data } = await apiClient.post<ApiResponse<MenuItem>>(
+  const { data } = await apiClient.post<ApiResponse>(
     APIEndpoints.products.create.replace(':tenantId', tenantId),
     product
   );
@@ -61,7 +61,7 @@ export const useCreateProduct = () => {
  * Update Product Hook
  */
 const updateProduct = async (tenantId: string, productId: string, product: Partial<MenuItem>) => {
-  const { data } = await apiClient.put<ApiResponse<MenuItem>>(
+  const { data } = await apiClient.put<ApiResponse>(
     APIEndpoints.products.update
       .replace(':tenantId', tenantId)
       .replace(':productId', productId),
@@ -89,7 +89,7 @@ export const useUpdateProduct = () => {
  * Delete Product Hook
  */
 const deleteProduct = async (tenantId: string, productId: string) => {
-  const { data } = await apiClient.delete<ApiResponse<null>>(
+  const { data } = await apiClient.delete<ApiResponse>(
     APIEndpoints.products.delete
       .replace(':tenantId', tenantId)
       .replace(':productId', productId)

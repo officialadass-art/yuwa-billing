@@ -62,3 +62,45 @@ export const useCreateApiTenant = () => {
         }
     })
 }
+
+/**
+ * Update Tenant Hook Starts from here
+ */
+interface UpdateBusinessPayload {
+    name: string;
+    address?: {
+        line1: string;
+        line2?: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+    };
+    logoUrl?: string;
+    defaultTaxRate?: number;
+    leagalInfo?: {
+        gstNumber?: string;
+    };
+}
+
+const updateApiTenant = async ({ tenantId, payload }: { tenantId: string; payload: UpdateBusinessPayload }) => {
+    const { data } = await apiClient.put(
+        APIEndpoints.business.update.replace(':tenantId', tenantId),
+        payload
+    );
+    return data;
+};
+
+export const useUpdateApiTenant = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: updateApiTenant,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENANTS] });
+        },
+        onError: (error) => {
+            console.log('Failed to update Tenant', error);
+        },
+    });
+};

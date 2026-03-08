@@ -4,11 +4,15 @@ import { Platform, StyleSheet, View } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { BorderRadius, BrandColors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Roles } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const {getCurrentBusinessRole} = useAuth();
+  const isOwner = getCurrentBusinessRole() == Roles.OWNER
 
   return (
     <Tabs
@@ -32,10 +36,12 @@ export default function TabLayout() {
         },
       }}
     >
+     
       <Tabs.Screen
         name="index"
         options={{
           title: "Dashboard",
+          href: isOwner ? "/(tabs)" : null, // Hide this tab for non-owners
           tabBarIcon: ({ color, focused }) => (
             <View
               style={[

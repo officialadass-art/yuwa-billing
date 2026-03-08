@@ -32,6 +32,14 @@ export interface Business {
       gstNumber?: string;
       panNumber?: string;
   };
+  subscription: {
+        status: Boolean,
+        endDate?: Date,
+        startDate?: Date,
+        logs?: [
+            {_date: Date, message: string}
+        ]
+    }
 }
 
 export interface MenuItem {
@@ -110,4 +118,10 @@ export interface Invoice {
     status: 'paid' | 'pending' | 'cancelled';
     userId?: string; // Billed by
     createdAt: string;
+}
+
+export enum Roles {
+    ADMIN = 'admin',
+    OWNER = 'owner',
+    STAFF = 'staff'
 }

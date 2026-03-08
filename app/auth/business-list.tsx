@@ -7,7 +7,7 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
-import { Business } from "@/types";
+import { Business, Roles } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -38,7 +38,7 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
-  const { user, selectBusiness, getToken, isAuthenticated, token } = useAuth();
+  const { user, selectBusiness, getToken, isAuthenticated, token, getCurrentBusinessRole } = useAuth();
   const {
     data: businessList,
     isLoading,
@@ -59,7 +59,12 @@ export default function BusinessListScreen() {
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
-    router.replace("/(tabs)");
+
+    if (getCurrentBusinessRole() === Roles.OWNER) {
+      router.replace("/(tabs)");
+    } else {
+      router.replace("/(tabs)/billing");
+    }
   };
 
   const handleOpenModal = () => {
@@ -101,42 +106,99 @@ export default function BusinessListScreen() {
     });
   };
 
-  const renderBusinessItem = ({ item }: { item: Business }) => (
-    <TouchableOpacity
-      style={styles.businessCard}
-      onPress={() => handleSelectBusiness(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.businessIcon}>
-        <Image
-          source={require("@/assets/images/logo.png")}
-          style={{ width: 40, height: 40 }}
-          resizeMode="contain"
-        />
-      </View>
-      <View style={styles.businessInfo}>
-        <Text style={styles.businessName}>{item.name}</Text>
-        <Text style={styles.businessAddress}>
-          {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
-          {item.address?.state} - {item.address?.postalCode},{" "}
-          {item.address?.country}{" "}
-        </Text>
-        <View style={styles.businessMeta}>
-          <Ionicons
-            name="call-outline"
-            size={14}
-            color={BrandColors.gray[500]}
+  const getSubscriptionStatusInfo = (business: Business) => {
+    const status: unknown = business.subscription?.status;
+    const isSubscriptionActive =
+      typeof status === "boolean"
+        ? status
+        : typeof status === "string"
+          ? status.toLowerCase() === "true"
+          : status instanceof Boolean
+            ? status.valueOf()
+            : false;
+
+    if (!isSubscriptionActive) {
+      return {
+        label: "Inactive",
+        color: BrandColors.danger,
+      };
+    }
+
+    const endDateValue = business.subscription?.endDate;
+    if (endDateValue) {
+      const endDate = new Date(endDateValue);
+      if (!Number.isNaN(endDate.getTime())) {
+        const oneMonthFromNow = new Date();
+        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+        if (endDate < oneMonthFromNow) {
+          return {
+            label: "Expiring Soon",
+            color: BrandColors.warning,
+          };
+        }
+      }
+    }
+
+    return {
+      label: "Active",
+      color: BrandColors.success,
+    };
+  };
+
+  const renderBusinessItem = ({ item }: { item: Business }) => {
+    const subscriptionStatusInfo = getSubscriptionStatusInfo(item);
+
+    return (
+      <TouchableOpacity
+        style={styles.businessCard}
+        onPress={() => handleSelectBusiness(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.businessIcon}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
           />
-          <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
         </View>
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={24}
-        color={BrandColors.gray[400]}
-      />
-    </TouchableOpacity>
-  );
+        <View style={styles.businessInfo}>
+          <Text style={styles.businessName}>{item.name}</Text>
+          <Text style={styles.businessAddress}>
+            {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
+            {item.address?.state} - {item.address?.postalCode},{" "}
+            {item.address?.country}{" "}
+          </Text>
+          {item.contact?.phone && (
+            <View style={styles.businessMeta}>
+              <Ionicons
+                name="call-outline"
+                size={14}
+                color={BrandColors.gray[500]}
+              />
+              <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
+            </View>
+          )}
+          <View style={styles.businessMeta}>
+            <Text style={styles.businessPhone}>
+              Subscription: <View
+              style={[
+                styles.subscriptionStatusDot,
+                { backgroundColor: subscriptionStatusInfo.color },
+              ]}
+            /> {subscriptionStatusInfo.label}
+            </Text>
+            
+          </View>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={24}
+          color={BrandColors.gray[400]}
+        />
+      </TouchableOpacity>
+    );
+  };
 
   const selectedCountryLabel = COUNTRIES.find(
     (c) => c.value === country,
@@ -518,6 +580,11 @@ const styles = StyleSheet.create({
   businessPhone: {
     fontSize: FontSizes.sm,
     color: BrandColors.gray[500],
+  },
+  subscriptionStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: BorderRadius.full,
   },
   bottomContainer: {
     padding: Spacing.lg,

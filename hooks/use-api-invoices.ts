@@ -7,24 +7,75 @@ import { QUERY_KEYS } from '../constants/queryKeys';
 /**
  * Get Invoices List Hook
  */
-const fetchInvoices = async (tenantId: string) => {
+export type InvoiceFilterType =
+  | 'today'
+  | 'yesterday'
+  | 'thisWeek'
+  | 'lastWeek'
+  | 'thisMonth'
+  | 'lastMonth'
+  | 'thisYear'
+  | 'lastYear'
+  | 'custom';
+
+export interface InvoiceFilters {
+  filterType: InvoiceFilterType;
+  startDate?: string;
+  endDate?: string;
+}
+
+const fetchInvoices = async (tenantId: string, filters?: InvoiceFilters) => {
+  if (filters) {
+    const queryParams: {
+      filterType: InvoiceFilterType;
+      startDate?: string;
+      endDate?: string;
+    } = {
+      filterType: filters.filterType,
+    };
+
+    if (filters.filterType === 'custom') {
+      queryParams.startDate = filters.startDate;
+      queryParams.endDate = filters.endDate;
+    }
+
+    const { data } = await apiClient.get<ApiResponse>(
+      APIEndpoints.invoices.filter.replace(':tenantId', tenantId),
+      {
+        params: queryParams,
+      }
+    );
+
+    return data.data as Invoice[];
+  }
+
   const { data } = await apiClient.get<ApiResponse>(
     APIEndpoints.invoices.list.replace(':tenantId', tenantId)
   );
-  return data;
+  return data.data as Invoice[];
 };
 
 interface UseInvoicesOptions extends Omit<UseQueryOptions<Invoice[], Error>, 'queryKey' | 'queryFn'> {
   enabled?: boolean;
   tenantId?: string;
+  filters?: InvoiceFilters;
 }
 
-export const useApiInvoices = ({ tenantId, enabled = true, ...options }: UseInvoicesOptions = {}) => {
+export const useApiInvoices = ({ tenantId, filters, enabled = true, ...options }: UseInvoicesOptions = {}) => {
+  const isCustomFilterInvalid =
+    filters?.filterType === 'custom' && (!filters.startDate || !filters.endDate);
+
   return useQuery({
-    queryKey: [QUERY_KEYS.INVOICES, tenantId],
-    queryFn: () => fetchInvoices(tenantId || ''),
+    queryKey: [
+      QUERY_KEYS.INVOICES,
+      tenantId,
+      filters?.filterType || 'all',
+      filters?.startDate || '',
+      filters?.endDate || '',
+    ],
+    queryFn: () => fetchInvoices(tenantId || '', filters),
     staleTime: 1000 * 60 * 5,
-    enabled: enabled && !!tenantId,
+    enabled: enabled && !!tenantId && !isCustomFilterInvalid,
     ...options,
   });
 };
@@ -38,7 +89,7 @@ const fetchInvoiceDetails = async (tenantId: string, invoiceId: string) => {
       .replace(':tenantId', tenantId)
       .replace(':invoiceId', invoiceId)
   );
-  return data;
+  return data.data as Invoice;
 };
 
 interface UseInvoiceDetailsOptions extends Omit<UseQueryOptions<Invoice, Error>, 'queryKey' | 'queryFn'> {
