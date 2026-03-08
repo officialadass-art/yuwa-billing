@@ -412,7 +412,10 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Business Card */}
         <TouchableOpacity
           style={styles.businessCard}
@@ -979,11 +982,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
+  },
   businessCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BrandColors.white,
-    margin: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     shadowColor: BrandColors.black,
@@ -1023,7 +1032,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   section: {
-    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   sectionTitle: {

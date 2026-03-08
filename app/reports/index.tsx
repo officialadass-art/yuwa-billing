@@ -235,7 +235,9 @@ const styles = StyleSheet.create({
     color: BrandColors.primary,
   },
   listContainer: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
   },
   summaryCard: {
     flexDirection: "row",

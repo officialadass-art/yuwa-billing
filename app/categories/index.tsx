@@ -6,17 +6,17 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import {
-  useApiCategories,
-  useCreateCategory,
-  useUpdateCategory,
+    useApiCategories,
+    useCreateCategory,
+    useUpdateCategory,
 } from "@/hooks/use-api-category";
 import { Category } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
+    ActivityIndicator,
+    Alert,
     Modal,
     ScrollView,
     StyleSheet,
@@ -134,10 +134,7 @@ export default function CategoriesScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Categories</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={openAddModal}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
           <Ionicons name="add" size={24} color={BrandColors.primary} />
         </TouchableOpacity>
       </View>
@@ -158,7 +155,11 @@ export default function CategoriesScreen() {
         {categories.map((cat) => (
           <View key={cat.id} style={styles.card}>
             <View style={styles.emojiContainer}>
-              <Ionicons name="pricetag-outline" size={20} color={BrandColors.primary} />
+              <Ionicons
+                name="pricetag-outline"
+                size={20}
+                color={BrandColors.primary}
+              />
             </View>
             <View style={styles.cardInfo}>
               <Text style={styles.cardTitle}>{cat.name}</Text>
@@ -259,7 +260,9 @@ const styles = StyleSheet.create({
     padding: Spacing.xs,
   },
   listContainer: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
   },
   loadingContainer: {
     paddingVertical: Spacing.md,

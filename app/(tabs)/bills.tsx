@@ -1,22 +1,22 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { InvoiceFilterType, useApiInvoices } from "@/hooks/use-api-invoices";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -155,7 +155,10 @@ export default function AllBillsScreen() {
         ) : isError ? (
           <View style={styles.stateContainer}>
             <Text style={styles.stateText}>Failed to load bills</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => refetch()}
+            >
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -175,13 +178,21 @@ export default function AllBillsScreen() {
               </View>
               <View style={styles.billInfo}>
                 <Text style={styles.billTitle}>Bill #{bill.id || "-"}</Text>
-                <Text style={styles.billDate}>{formatBillDate(bill.createdAt)}</Text>
-                <Text style={styles.billItems}>{bill.items?.length || 0} items</Text>
+                <Text style={styles.billDate}>
+                  {formatBillDate(bill.createdAt)}
+                </Text>
+                <Text style={styles.billItems}>
+                  {bill.items?.length || 0} items
+                </Text>
               </View>
               <View style={styles.billAmountContainer}>
-                <Text style={styles.billAmount}>₹{(bill.totalAmount || 0).toLocaleString("en-IN")}</Text>
+                <Text style={styles.billAmount}>
+                  ₹{(bill.totalAmount || 0).toLocaleString("en-IN")}
+                </Text>
                 <Text style={styles.billStatus}>
-                  {bill.status ? `${bill.status.charAt(0).toUpperCase()}${bill.status.slice(1)}` : "-"}
+                  {bill.status
+                    ? `${bill.status.charAt(0).toUpperCase()}${bill.status.slice(1)}`
+                    : "-"}
                 </Text>
               </View>
             </View>
@@ -311,7 +322,9 @@ const styles = StyleSheet.create({
     color: BrandColors.primary,
   },
   listContainer: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
     flexGrow: 1,
   },
   stateContainer: {

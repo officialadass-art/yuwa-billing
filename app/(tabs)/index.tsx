@@ -1,8 +1,8 @@
 import {
-  BorderRadius,
-  BrandColors,
-  FontSizes,
-  Spacing,
+    BorderRadius,
+    BrandColors,
+    FontSizes,
+    Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,13 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -151,18 +151,22 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.subscriptionRow}>
           <View style={styles.subscriptionMeta}>
             <Text style={styles.subscriptionText}>
-              Subscription: <View
-              style={[
-                styles.subscriptionStatusDot,
-                { backgroundColor: subscriptionStatusInfo.color },
-              ]}
-            /> {subscriptionStatusInfo.label}
+              Subscription:{" "}
+              <View
+                style={[
+                  styles.subscriptionStatusDot,
+                  { backgroundColor: subscriptionStatusInfo.color },
+                ]}
+              />{" "}
+              {subscriptionStatusInfo.label}
             </Text>
-            
           </View>
           <TouchableOpacity
             style={styles.renewButton}
@@ -438,10 +442,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: BrandColors.primary,
   },
-  content: {
-    flex: 1,
-    marginTop: Spacing.sm,
+  scrollContent: {
     paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
   },
   subscriptionRow: {
     flexDirection: "row",

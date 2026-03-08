@@ -269,7 +269,10 @@ export default function SubscriptionsScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Current Plan Info */}
         {currentPlan && (
           <View style={styles.currentPlanInfo}>
@@ -353,6 +356,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BrandColors.gray[50],
   },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingTop: 0,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -369,8 +377,7 @@ const styles = StyleSheet.create({
     color: BrandColors.gray[900],
   },
   currentPlanInfo: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     marginBottom: Spacing.xl,
     padding: Spacing.lg,
     backgroundColor: BrandColors.success + "15",
@@ -397,7 +404,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   plansContainer: {
-    paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
   planCard: {
@@ -512,7 +518,6 @@ const styles = StyleSheet.create({
     color: BrandColors.white,
   },
   infoSection: {
-    paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xl,
     gap: Spacing.lg,
@@ -537,7 +542,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footer: {
-    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
   footerText: {
