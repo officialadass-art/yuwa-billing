@@ -1,4 +1,7 @@
+import apiClient from "@/api/client";
+import { APIEndpoints } from "@/constants/apiEndpoint";
 import { AuthState, Business, User } from "@/types";
+import { router } from "expo-router";
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
@@ -44,6 +47,54 @@ interface AuthTokenPayload {
   exp?: number;
 }
 
+
+  const decodeAuthTokenPayload = (token?: string | null): AuthTokenPayload | null => {
+    if (!token) return null;
+
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+
+    try {
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+
+      if (typeof globalThis.atob === 'function') {
+        return JSON.parse(globalThis.atob(paddedBase64));
+      }
+
+      const BufferCtor = (globalThis as { Buffer?: { from: (value: string, encoding: string) => { toString: (enc: string) => string } } }).Buffer;
+      if (BufferCtor?.from) {
+        const decoded = BufferCtor.from(paddedBase64, 'base64').toString('utf8');
+        return JSON.parse(decoded);
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+const AttemptRefreshTokenIfNeeded = async (token: string | null, refreshToken: string | null) => {
+  if (!token || !refreshToken) return null;
+
+  const payload = decodeAuthTokenPayload(token);
+  const currentTime = Math.floor(Date.now() / 1000);
+  if (payload?.exp && payload.exp - currentTime < (2 * 60 * 60)) { // Consider token expiring if it's expiring in the next 2 hours or already expired
+    try {
+      const refreshTokenResult = await apiClient.post(APIEndpoints.auth.refreshToken, {
+        refreshToken,
+        userId: payload?.uid
+      });
+      return refreshTokenResult.data.data as { token: string; refreshToken: string };
+    } catch (error) {
+      console.error("Failed to refresh token:", error);
+      return null;
+    }
+  }
+  return null;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [authState, setAuthState] = useState<AuthState>({
@@ -63,7 +114,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loadAuthState = async () => {
       const storedState = await SecureStoreGet(AUTH_STATE_KEY);
       if (storedState) {
-        setAuthState(JSON.parse(storedState));
+        const parsedState = JSON.parse(storedState);
+        setAuthState(parsedState);
+
+        // Attempt to refresh token if it's expired or about to expire
+        const refreshTokenResult = await AttemptRefreshTokenIfNeeded(parsedState.token, parsedState.refreshToken);
+        if (refreshTokenResult) {
+          setAuthState((prev) => ({
+            ...prev,
+            token: refreshTokenResult.token,
+            refreshToken: refreshTokenResult.refreshToken,
+          }));
+
+          router.navigate('/auth/business-list');
+        }
+
       }
     };
     loadAuthState();
@@ -112,32 +177,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authState.refreshToken;
   }
 
-  const decodeAuthTokenPayload = (token?: string | null): AuthTokenPayload | null => {
-    if (!token) return null;
-
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-
-    try {
-      const base64Url = parts[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-
-      if (typeof globalThis.atob === 'function') {
-        return JSON.parse(globalThis.atob(paddedBase64));
-      }
-
-      const BufferCtor = (globalThis as { Buffer?: { from: (value: string, encoding: string) => { toString: (enc: string) => string } } }).Buffer;
-      if (BufferCtor?.from) {
-        const decoded = BufferCtor.from(paddedBase64, 'base64').toString('utf8');
-        return JSON.parse(decoded);
-      }
-
-      return null;
-    } catch {
-      return null;
-    }
-  };
 
   const getUserRoleByTenantId = (tenantId?: string | null): string | null => {
     if (!tenantId) return null;
