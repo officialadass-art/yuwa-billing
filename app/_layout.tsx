@@ -15,7 +15,14 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StyleSheet } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3, // Retry failed queries up to 2 times,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff with a max delay of 30 seconds
+    }
+  }
+});
 
 // Custom light theme with our brand colors
 const CafeTheme = {

@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiDashboard } from "@/hooks/use-api-dashboard";
@@ -10,13 +10,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -170,7 +170,7 @@ export default function DashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.renewButton}
-            onPress={() => router.navigate("/billing")}
+            onPress={() => router.navigate("/subscriptions")}
             activeOpacity={0.85}
           >
             <Ionicons
