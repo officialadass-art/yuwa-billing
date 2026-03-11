@@ -1,5 +1,5 @@
 export const APIEndpoints = {
-  baseURL: "https://cafe-billing-api.vercel.app/api", // Production
+  baseURL: "https://leka-cafe-api.vercel.app/api", // Production
   // baseURL: "http://localhost:3000/api", // Development
   auth: {
     sendOtp: "/auth/initiate",
@@ -30,5 +30,5 @@ export const APIEndpoints = {
     list: "/tenants/:tenantId/invoices",
     details: "/tenants/:tenantId/invoices/:invoiceId",
     filter: "/tenants/:tenantId/invoices/filter",
-  }
-}
+  },
+};
