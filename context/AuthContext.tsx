@@ -30,6 +30,8 @@ interface AuthContextType extends AuthState {
   getRefreshToken: () => string | null;
   getUserRoleByTenantId: (tenantId?: string | null) => string | null;
   getCurrentBusinessRole: () => string | null;
+  setToken: (token: string) => void;
+  setRefreshToken: (refreshToken: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -177,10 +179,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authState.refreshToken;
   }
 
+  const setToken = (token: string) => {
+    setAuthState((prev) => ({
+      ...prev,
+      token,
+    }));
+  }
+
+  const setRefreshToken = (refreshToken: string) => {
+    setAuthState((prev) => ({
+      ...prev,
+      refreshToken,
+    }));
+  }
+
 
   const getUserRoleByTenantId = (tenantId?: string | null): string | null => {
     if (!tenantId) return null;
-
     const payload = decodeAuthTokenPayload(authState.token);
     if (!payload?.tenants?.length) return null;
 
@@ -203,6 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getRefreshToken,
         getUserRoleByTenantId,
         getCurrentBusinessRole,
+        setToken,
+        setRefreshToken,
       }}
     >
       {children}

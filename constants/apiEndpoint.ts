@@ -1,6 +1,7 @@
 export const APIEndpoints = {
-  baseURL: "https://leka-cafe-api.vercel.app/api", // Production
-  // baseURL: "http://localhost:3000/api", // Development
+  // baseURL: "https://leka-cafe-api.vercel.app/api", // Production
+  // Sit: "https://cafe-billing-api.vercel.app/api" // Staging
+  baseURL: "http://localhost:3000/api", // Development
   auth: {
     sendOtp: "/auth/initiate",
     verifyOtp: "/auth/verify",

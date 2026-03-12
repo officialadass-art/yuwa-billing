@@ -1,9 +1,9 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useApiTenants, useCreateApiTenant } from "@/hooks/use-api-tenants";
@@ -12,21 +12,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,6 +45,9 @@ export default function BusinessListScreen() {
     isAuthenticated,
     token,
     getCurrentBusinessRole,
+    setToken,
+    setRefreshToken,
+
   } = useAuth();
   const {
     data: businessList,
@@ -66,6 +69,11 @@ export default function BusinessListScreen() {
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
+
+    if (business.subscription?.status === false) {
+      router.push("/subscriptions");
+      return;
+    }
 
     if (getCurrentBusinessRole() === Roles.OWNER) {
       router.replace("/(tabs)");
@@ -99,9 +107,15 @@ export default function BusinessListScreen() {
       },
     };
     mutate(newBusiness, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         setModalVisible(false);
         Alert.alert("Business Created Successfully !");
+        // update new token and refresh token in auth context
+        const apiResponse = data.data;
+        if (apiResponse.accessToken && apiResponse.refreshToken) {
+            setToken(apiResponse.accessToken);
+            setRefreshToken(apiResponse.refreshToken);
+        }
       },
       onError: () => {
         Alert.alert(
